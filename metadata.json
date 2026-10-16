@@ -1,0 +1,6 @@
+{
+  "name": "Vestibulando Neo - Plataforma Desktop de Questões de Vestibulares",
+  "description": "Aplicação desktop Neobrutalista para Windows 11 com resolução de questões do ENEM (TRI 3PL) e UERJ/Vestibulares, suporte completo a mesa digitalizadora, gamificação e ingestão offline.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
