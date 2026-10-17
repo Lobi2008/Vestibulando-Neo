@@ -81,12 +81,16 @@ const TaxonomyFilterBarComponent: React.FC<TaxonomyFilterBarProps> = ({
     setSearchText((current) => (current === filters.searchQuery ? current : filters.searchQuery));
   }, [filters.searchQuery]);
 
-  const toggleCollapsed = useCallback(() => setIsCollapsed((prev) => !prev), []);
-
-  // Clique em qualquer ponto da caixa fechada expande os filtros (não recolhe se já estiver aberta)
+  // Clique na caixa fechada expande os filtros; clique no cabeçalho com a caixa aberta recolhe
   const expandIfCollapsed = useCallback(() => {
     if (isCollapsed) setIsCollapsed(false);
   }, [isCollapsed]);
+
+  // O botão da seta já alterna sozinho; o stopPropagation evita alternar duas vezes pelo cabeçalho
+  const handleToggleClick = useCallback((e: React.MouseEvent<HTMLButtonElement>) => {
+    e.stopPropagation();
+    setIsCollapsed((prev) => !prev);
+  }, []);
 
   const handleResetClick = useCallback(
     (e: React.MouseEvent<HTMLButtonElement>) => {
@@ -122,7 +126,10 @@ const TaxonomyFilterBarComponent: React.FC<TaxonomyFilterBarProps> = ({
       className={`bg-surface neo-border neo-shadow p-3 mb-4 transition-colors ${isCollapsed ? 'cursor-pointer' : ''}`}
       onClick={expandIfCollapsed}
     >
-      <div className={`flex flex-wrap items-center justify-between gap-2 ${isCollapsed ? '' : 'pb-2 mb-2 border-b-2 border-black'}`}>
+      <div
+        className={`flex flex-wrap items-center justify-between gap-2 cursor-pointer ${isCollapsed ? '' : 'pb-2 mb-2 border-b-2 border-black'}`}
+        onClick={() => { if (!isCollapsed) setIsCollapsed(true); }}
+      >
         <div className="flex items-center gap-2">
           <Layers className="w-5 h-5 text-ink" />
           <span className="text-sm font-black uppercase tracking-wider text-ink">
@@ -146,7 +153,7 @@ const TaxonomyFilterBarComponent: React.FC<TaxonomyFilterBarProps> = ({
 
           <button
             type="button"
-            onClick={toggleCollapsed}
+            onClick={handleToggleClick}
             className="p-1 neo-border-sm bg-surface-2 hover:bg-black hover:text-white transition-colors"
             title={isCollapsed ? 'Mostrar filtros' : 'Ocultar filtros'}
             aria-label={isCollapsed ? 'Mostrar filtros' : 'Ocultar filtros'}

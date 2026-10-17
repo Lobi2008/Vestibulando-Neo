@@ -13,6 +13,7 @@
   "build": {
     "appId": "com.vestibulando.neo",
     "productName": "Vestibulando NEO",
+    "icon": "build/icon.jpg",
     "directories": {
       "output": "release"
     },
@@ -24,7 +25,8 @@
     "files": [
       "dist/**/*",
       "electron.js",
-      "package.json"
+      "package.json",
+      "build/icon.jpg"
     ]
   },
   "dependencies": {

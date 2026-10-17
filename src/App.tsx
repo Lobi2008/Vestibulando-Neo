@@ -14,7 +14,6 @@
  */
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { WindowTitleBar } from './components/desktop/WindowTitleBar.tsx';
 import { HeaderStatsBar, NavTabType } from './components/navigation/HeaderStatsBar.tsx';
 import { HomeWelcomeHub } from './components/home/HomeWelcomeHub.tsx';
 import { StudySessionStarter } from './components/session/StudySessionStarter.tsx';
@@ -88,7 +87,6 @@ export default function App() {
 
   // Aba ativa na navegação principal
   const [activeTab, setActiveTab] = useState<NavTabType>('home');
-  const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
 
   // Filtros da Taxonomia Hierárquica
   const [filters, setFilters] = useState<FilterState>(DEFAULT_FILTERS);
@@ -291,22 +289,8 @@ export default function App() {
     setActiveTab('questions');
   };
 
-  const handleToggleFullscreen = () => {
-    if (!document.fullscreenElement) {
-      document.documentElement.requestFullscreen().then(() => setIsFullscreen(true)).catch(() => {});
-    } else {
-      document.exitFullscreen().then(() => setIsFullscreen(false)).catch(() => {});
-    }
-  };
-
   return (
     <div className="min-h-screen flex flex-col bg-page text-ink antialiased transition-colors">
-      {/* Barra de Título Windows 11 */}
-      <WindowTitleBar
-        isFullscreen={isFullscreen}
-        onToggleFullscreen={handleToggleFullscreen}
-      />
-
       {/* Header com Gamificação, Modo Escuro e Abas */}
       <HeaderStatsBar
         profile={profile}
@@ -453,6 +437,12 @@ export default function App() {
           <DataSyncHub
             questions={questions}
             onQuestionsUpdated={(updated) => setQuestions(updated)}
+            onProgressCleared={(blankProfile) => {
+              setProfile(blankProfile);
+              setAttempts([]);
+              setSrsItems({});
+              setSavedStrokesMap({});
+            }}
           />
         )}
 

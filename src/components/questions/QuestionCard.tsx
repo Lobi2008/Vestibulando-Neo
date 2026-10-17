@@ -1,7 +1,7 @@
 /**
  * @file src/components/questions/QuestionCard.tsx
  * @description Card interativo de resolução de questão com design Neobrutalista.
- * Suporta alternativas A-E, eliminação por clique longo de 1s, marca-texto (H), atalhos 'S'/'W' (próxima/anterior) e 'CTRL+Z',
+ * Suporta alternativas A-E, eliminação por clique longo de 1s, marca-texto (selecionar para marcar, clicar para desmarcar), atalhos 'S'/'W' (próxima/anterior) e 'CTRL+Z',
  * botão unificado de Rascunho com múltiplos modos, perguntas em negrito e pontuação automática no ENEM.
  */
 
@@ -206,12 +206,6 @@ const QuestionCardComponent: React.FC<QuestionCardProps> = ({
         return;
       }
 
-      // Atalho 'H' para ligar/desligar o marca-texto
-      if (e.key.toLowerCase() === 'h' && !e.ctrlKey && !e.metaKey && !e.altKey) {
-        highlighter.toggle();
-        return;
-      }
-
       // Atalho 'S' para pular para a próxima questão
       if (e.key.toLowerCase() === 's' && !e.ctrlKey && !e.metaKey && !e.altKey) {
         onNextQuestion();
@@ -246,7 +240,7 @@ const QuestionCardComponent: React.FC<QuestionCardProps> = ({
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [selectedOption, hasSubmitted, question, onNextQuestion, onPrevQuestion, highlighter.toggle]);
+  }, [selectedOption, hasSubmitted, question, onNextQuestion, onPrevQuestion]);
 
   const handleSubmitAnswer = () => {
     if (!selectedOption || hasSubmitted) return;
@@ -264,14 +258,19 @@ const QuestionCardComponent: React.FC<QuestionCardProps> = ({
 
   // Tratadores de eliminação de alternativa segurando por 1s
   const handlePointerDownAlt = (altId: string) => {
-    // No modo marca-texto, arrastar sobre a alternativa serve para selecionar, não para riscar
-    if (hasSubmitted || highlighter.enabled) return;
+    if (hasSubmitted) return;
     isHoldCompletedRef.current = false;
     setHoldingAltId(altId);
 
     if (holdTimerRef.current) clearTimeout(holdTimerRef.current);
 
     holdTimerRef.current = setTimeout(() => {
+      // Se há texto selecionado (marca-texto), o usuário está arrastando para marcar, não para riscar
+      const sel = window.getSelection();
+      if (sel && !sel.isCollapsed && sel.toString().trim().length > 0) {
+        setHoldingAltId(null);
+        return;
+      }
       isHoldCompletedRef.current = true;
       setEliminatedOptions((prev) => ({
         ...prev,
@@ -327,13 +326,8 @@ const QuestionCardComponent: React.FC<QuestionCardProps> = ({
 
   return (
     <div className="space-y-4">
-      {/* Barra Superior de Controles: Título Simples "Rascunho" e Botão Unificado */}
-      <div className="bg-surface neo-border neo-shadow-sm px-3 py-2 flex flex-wrap items-center justify-between gap-2">
-        <div className="flex items-center gap-1.5 text-xs font-black text-ink">
-          <Edit3 className="w-4 h-4 text-[#FF5A36]" />
-          <span>Rascunho:</span>
-        </div>
-
+      {/* Botão Unificado de Rascunho (sem bloco/título ao redor) */}
+      <div className="flex justify-end">
         {/* Botão Unificado de Rascunho com Seletor Multi-modo */}
         <div className="relative">
           <button
@@ -445,7 +439,7 @@ const QuestionCardComponent: React.FC<QuestionCardProps> = ({
         {/* Lado Esquerdo: Card da Questão */}
         <div
           ref={highlightRootRef}
-          className={`bg-surface neo-border neo-shadow-lg p-4 md:p-6 2xl:p-7 relative overflow-hidden ${showSide ? 'lg:col-span-6' : ''} ${highlighter.enabled ? 'cursor-text' : ''}`}
+          className={`bg-surface neo-border neo-shadow-lg p-4 md:p-6 2xl:p-7 relative overflow-hidden ${showSide ? 'lg:col-span-6' : ''}`}
         >
           {/* MODO OVERLAY: Canvas de Mesa Digitalizadora Transparente Diretamente Sobre o Texto */}
           {showOverlay && (
@@ -499,36 +493,17 @@ const QuestionCardComponent: React.FC<QuestionCardProps> = ({
             </div>
 
             <div className="flex items-center gap-2">
-              {/* Marca-texto: selecione palavras com o mouse para destacá-las em amarelo */}
-              {highlighter.supported && (
-                <div className="flex items-center">
-                  <button
-                    type="button"
-                    onClick={highlighter.toggle}
-                    aria-pressed={highlighter.enabled}
-                    className={`flex items-center gap-1.5 text-[11px] font-black px-2.5 py-1 neo-border-sm transition-colors ${
-                      highlighter.enabled ? 'bg-primary text-ink' : 'bg-surface text-ink hover:bg-primary'
-                    }`}
-                    title={
-                      highlighter.enabled
-                        ? 'Marca-texto ligado: selecione um trecho para destacar; selecione sobre um destaque para remover (H)'
-                        : 'Ligar marca-texto (H)'
-                    }
-                  >
-                    <Highlighter className="w-3.5 h-3.5" />
-                    <span>{highlighter.enabled ? 'Marca-texto ligado' : 'Marca-texto'}</span>
-                  </button>
-                  {highlighter.count > 0 && (
-                    <button
-                      type="button"
-                      onClick={highlighter.clear}
-                      className="-ml-0.5 px-2 py-1 text-[11px] font-black neo-border-sm bg-surface text-ink hover:bg-gray-100 transition-colors"
-                      title="Remover todos os destaques"
-                    >
-                      Limpar ({highlighter.count})
-                    </button>
-                  )}
-                </div>
+              {/* Marca-texto: selecione um trecho para marcar; clique no trecho marcado para desmarcar */}
+              {highlighter.supported && highlighter.count > 0 && (
+                <button
+                  type="button"
+                  onClick={highlighter.clear}
+                  className="flex items-center gap-1.5 text-[11px] font-black px-2.5 py-1 neo-border-sm bg-surface text-ink hover:bg-primary transition-colors"
+                  title="Remover todos os destaques"
+                >
+                  <Highlighter className="w-3.5 h-3.5" />
+                  <span>Limpar marcações ({highlighter.count})</span>
+                </button>
               )}
 
               {/* Copiar enunciado + alternativas formatados */}
@@ -630,8 +605,8 @@ const QuestionCardComponent: React.FC<QuestionCardProps> = ({
                   onPointerLeave={handlePointerUpAlt}
                   onClick={() => handleClickAlt(alt.id)}
                   className={`w-full text-left p-3.5 neo-border neo-shadow-sm flex items-start gap-3 transition-colors relative overflow-hidden ${
-                    highlighter.enabled && !hasSubmitted ? 'select-text cursor-text' : 'select-none'
-                  } ${hasSubmitted ? 'cursor-default' : highlighter.enabled ? '' : 'cursor-pointer'} ${buttonStyle}`}
+                    'select-text'
+                  } ${hasSubmitted ? 'cursor-default' : 'cursor-pointer'} ${buttonStyle}`}
                 >
                   {/* Barra de progresso para o clique longo de 1s */}
                   {isHolding && (
@@ -650,9 +625,7 @@ const QuestionCardComponent: React.FC<QuestionCardProps> = ({
                   <RichText
                     as="span"
                     text={alt.text}
-                    className={`text-sm md:text-base font-medium flex-1 min-w-0 pt-0.5 ${
-                      highlighter.enabled ? 'selectable-text' : ''
-                    } ${
+                    className={`text-sm md:text-base font-medium flex-1 min-w-0 pt-0.5 selectable-text ${
                       isEliminated ? 'line-through decoration-red-600 decoration-2' : ''
                     }`}
                     imgClassName="max-h-60 2xl:max-h-96"

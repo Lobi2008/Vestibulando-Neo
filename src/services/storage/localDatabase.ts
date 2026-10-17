@@ -164,20 +164,67 @@ export function deleteQuestionsByFilter(
 }
 
 /**
- * Limpa completamente o banco de dados local e restaura o seed mestre limpo
+ * Limpa completamente o banco de dados local e restaura o seed mestre e perfil padrão
  */
 export function clearAndResetDatabase(): Question[] {
   try {
-    localStorage.removeItem(STORAGE_KEYS.QUESTIONS);
-    localStorage.removeItem(STORAGE_KEYS.ATTEMPTS);
-    localStorage.removeItem(STORAGE_KEYS.SRS);
+    // Remove explicitamente cada item armazenado
+    Object.values(STORAGE_KEYS).forEach((key) => localStorage.removeItem(key));
+    
+    // Remove todos os rascunhos salvos (que usam prefixo)
+    Object.keys(localStorage).forEach((key) => {
+      if (key.startsWith(STORAGE_KEYS.ANNOTATIONS_PREFIX)) {
+        localStorage.removeItem(key);
+      }
+    });
+
+    // Restaura o estado inicial
     const cleanSeed = deduplicateQuestions(INITIAL_QUESTION_SEED);
     localStorage.setItem(STORAGE_KEYS.QUESTIONS, JSON.stringify(cleanSeed));
+    localStorage.setItem(STORAGE_KEYS.PROFILE, JSON.stringify(DEFAULT_PROFILE));
+    
     return cleanSeed;
   } catch (e) {
     console.error('Falha ao limpar banco de dados:', e);
     return INITIAL_QUESTION_SEED;
   }
+}
+
+/**
+ * Apaga todo o progresso do usuário: perfil (nível, XP, ofensivas, meta e curso), histórico de
+ * tentativas, itens de revisão espaçada e rascunhos da mesa digitalizadora.
+ * O banco de questões e as resoluções escritas pelo aluno não são alterados.
+ * Retorna o perfil zerado.
+ */
+export function clearUserProgress(): UserProfile {
+  const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+  // lastActiveDate = ontem para que a primeira questão resolvida depois do reset já inicie a ofensiva em 1.
+  const blankProfile: UserProfile = {
+    ...DEFAULT_PROFILE,
+    currentStreak: 0,
+    longestStreak: 0,
+    lastActiveDate: yesterday,
+    totalXp: 0,
+    level: 1,
+    estimatedTri: undefined,
+  };
+
+  try {
+    localStorage.removeItem(STORAGE_KEYS.ATTEMPTS);
+    localStorage.removeItem(STORAGE_KEYS.SRS);
+
+    // Rascunhos salvos (um item por questão, identificados pelo prefixo)
+    Object.keys(localStorage).forEach((key) => {
+      if (key.startsWith(STORAGE_KEYS.ANNOTATIONS_PREFIX)) {
+        localStorage.removeItem(key);
+      }
+    });
+
+    localStorage.setItem(STORAGE_KEYS.PROFILE, JSON.stringify(blankProfile));
+  } catch (e) {
+    console.error('Falha ao apagar o progresso do usuário:', e);
+  }
+  return blankProfile;
 }
 
 /**

@@ -300,11 +300,21 @@ html.dark {
   cursor: crosshair;
 }
 
-/* Scrollbar (variáveis trocam no modo escuro) */
-::-webkit-scrollbar { width: 10px; height: 10px; }
-::-webkit-scrollbar-track { background: var(--scroll-track); border-left: 2px solid var(--line); }
-::-webkit-scrollbar-thumb { background: var(--scroll-thumb); border: 2px solid var(--line); }
-::-webkit-scrollbar-thumb:hover { background: var(--scroll-thumb-hover); }
+/* Oculta a barra de scroll em todos os navegadores */
+html {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+html::-webkit-scrollbar {
+  display: none;
+  width: 0px;
+  height: 0px;
+}
+::-webkit-scrollbar {
+  display: none;
+  width: 0px;
+  height: 0px;
+}
 
 /* Marca-texto (CSS Custom Highlight API): pinta o trecho sem alterar o DOM */
 ::highlight(user-hl) {

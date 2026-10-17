@@ -25,7 +25,6 @@ const QUESTION_SHORTCUTS: ShortcutItem[] = [
   { keys: ['W'], label: 'Anterior' },
   { keys: ['S'], label: 'Próxima' },
   { keys: ['R'], label: 'Rascunho' },
-  { keys: ['H'], label: 'Marca-texto' },
 ];
 
 const DRAW_SHORTCUTS: ShortcutItem[] = [

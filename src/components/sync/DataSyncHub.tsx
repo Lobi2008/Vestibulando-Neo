@@ -20,12 +20,12 @@ import {
   Trash2,
   AlertTriangle
 } from 'lucide-react';
-import type { Question, ExamType, DisciplineType } from '../../types/index.ts';
+import type { Question, UserProfile, ExamType, DisciplineType } from '../../types/index.ts';
 import { fetchFromEnemDev, fetchFromBeatrizMilzRepo, IngestionLog } from '../../services/ingestion/apiIngestion.ts';
 import {
   saveQuestions,
   generateSqliteExportScript,
-  clearAndResetDatabase,
+  clearUserProgress,
   deleteQuestionsByFilter,
   matchesDeletionCriteria,
 } from '../../services/storage/localDatabase.ts';
@@ -42,11 +42,13 @@ import type { ImportError } from '../../utils/questionImport.ts';
 interface DataSyncHubProps {
   questions: Question[];
   onQuestionsUpdated: (updatedList: Question[]) => void;
+  onProgressCleared: (blankProfile: UserProfile) => void;
 }
 
 export const DataSyncHub: React.FC<DataSyncHubProps> = ({
   questions,
   onQuestionsUpdated,
+  onProgressCleared,
 }) => {
   const [isLoadingEnem, setIsLoadingEnem] = useState<boolean>(false);
   const [isLoadingBeatriz, setIsLoadingBeatriz] = useState<boolean>(false);
@@ -333,17 +335,21 @@ export const DataSyncHub: React.FC<DataSyncHubProps> = ({
     }
   };
 
-  const handleResetSeed = () => {
-    if (confirm('Restaurar o banco de questões padrão e remover duplicatas?')) {
-      const fresh = clearAndResetDatabase();
-      onQuestionsUpdated(fresh);
+  const handleClearProgress = () => {
+    if (
+      confirm(
+        'Apagar TODO o seu progresso?\n\nPerfil (nível, XP, ofensivas, meta), histórico de tentativas, revisões agendadas e rascunhos da mesa digitalizadora serão removidos. As questões continuam no banco.\n\nEsta ação não pode ser desfeita.'
+      )
+    ) {
+      const blank = clearUserProgress();
+      onProgressCleared(blank);
       setLogs((prev) => [
         {
           timestamp: Date.now(),
-          source: 'Restauração',
+          source: 'Progresso',
           status: 'success',
-          message: `Banco restaurado: ${fresh.length} questões.`,
-          count: fresh.length,
+          message: 'Progresso apagado: perfil, tentativas, revisões e rascunhos.',
+          count: 0,
         },
         ...prev,
       ]);
@@ -479,10 +485,11 @@ export const DataSyncHub: React.FC<DataSyncHubProps> = ({
 
           <button
             type="button"
-            onClick={handleResetSeed}
-            className="px-4 py-2 text-xs font-bold neo-btn bg-gray-200 text-ink hover:bg-red-100"
+            onClick={handleClearProgress}
+            className="px-4 py-2 text-xs font-black neo-btn bg-red-500 text-white flex items-center gap-2"
           >
-            Restaurar questões padrão
+            <Trash2 className="w-4 h-4" />
+            <span>Apagar meu progresso</span>
           </button>
         </div>
       </div>
