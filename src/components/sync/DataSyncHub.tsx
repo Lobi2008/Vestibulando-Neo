@@ -53,9 +53,9 @@ export const DataSyncHub: React.FC<DataSyncHubProps> = ({
   const [logs, setLogs] = useState<IngestionLog[]>([
     {
       timestamp: Date.now() - 3600000,
-      source: 'Local SQLite/IndexedDB Storage',
+      source: 'Banco local',
       status: 'success',
-      message: `Banco offline inicial carregado com sucesso (${questions.length} questões ativas).`,
+      message: `Banco carregado: ${questions.length} questões.`,
       count: questions.length,
     },
   ]);
@@ -146,9 +146,9 @@ export const DataSyncHub: React.FC<DataSyncHubProps> = ({
     setLogs((prev) => [
       {
         timestamp: Date.now(),
-        source: 'Exclusão de Questões',
+        source: 'Exclusão',
         status: removedCount > 0 ? 'success' : 'warning',
-        message: `${removedCount} questão(ões) apagada(s) [vestibular: ${deleteVestibular} | matéria: ${deleteDiscipline} | conteúdo: ${deleteTopic}]. Restam ${remaining.length} no banco.`,
+        message: `${removedCount} questão(ões) apagada(s). Restam ${remaining.length} no banco.`,
         count: removedCount,
       },
       ...prev,
@@ -162,7 +162,7 @@ export const DataSyncHub: React.FC<DataSyncHubProps> = ({
 
   const handleSyncEnemDev = async () => {
     setIsLoadingEnem(true);
-    setProgressMsg('Iniciando loop de consulta à API pública enem.dev...');
+    setProgressMsg('Conectando ao enem.dev...');
     try {
       const result = await fetchFromEnemDev((count, msg) => {
         setProgressMsg(msg);
@@ -176,7 +176,7 @@ export const DataSyncHub: React.FC<DataSyncHubProps> = ({
           timestamp: Date.now(),
           source: 'enem.dev',
           status: 'error',
-          message: `Erro na sincronização: ${e.message}`,
+          message: `Erro na importação: ${e.message}`,
           count: 0,
         },
         ...prev,
@@ -189,7 +189,7 @@ export const DataSyncHub: React.FC<DataSyncHubProps> = ({
 
   const handleSyncBeatrizMilz = async () => {
     setIsLoadingBeatriz(true);
-    setProgressMsg('Iniciando loop de agregação dos repositórios...');
+    setProgressMsg('Buscando nos repositórios...');
     try {
       const result = await fetchFromBeatrizMilzRepo((count, msg) => {
         setProgressMsg(msg);
@@ -203,7 +203,7 @@ export const DataSyncHub: React.FC<DataSyncHubProps> = ({
           timestamp: Date.now(),
           source: 'beatrizmilz/BancoDeQuestoes',
           status: 'error',
-          message: `Erro na sincronização: ${e.message}`,
+          message: `Erro na importação: ${e.message}`,
           count: 0,
         },
         ...prev,
@@ -217,14 +217,14 @@ export const DataSyncHub: React.FC<DataSyncHubProps> = ({
   const handleSyncAllBatch = async () => {
     setIsLoadingEnem(true);
     setIsLoadingBeatriz(true);
-    setProgressMsg('Executando loop completo: conectando ao enem.dev...');
+    setProgressMsg('Conectando ao enem.dev...');
     try {
       const enemRes = await fetchFromEnemDev((count, msg) => {
         setProgressMsg(`[1/2 ENEM] ${msg}`);
       });
       saveQuestions(enemRes.questions);
 
-      setProgressMsg('Executando loop completo: consultando beatrizmilz e questoesConcursos...');
+      setProgressMsg('Buscando nos repositórios...');
       const repoRes = await fetchFromBeatrizMilzRepo((count, msg) => {
         setProgressMsg(`[2/2 Repositórios] ${msg}`);
       });
@@ -234,9 +234,9 @@ export const DataSyncHub: React.FC<DataSyncHubProps> = ({
       setLogs((prev) => [
         {
           timestamp: Date.now(),
-          source: 'Sincronização Completa em Loop',
+          source: 'Importação completa',
           status: 'success',
-          message: `Loop concluído com sucesso: total acumulado de ${allUpdated.length} questões no banco local!`,
+          message: `Importação concluída: ${allUpdated.length} questões no banco.`,
           count: enemRes.questions.length + repoRes.questions.length,
         },
         repoRes.log,
@@ -247,9 +247,9 @@ export const DataSyncHub: React.FC<DataSyncHubProps> = ({
       setLogs((prev) => [
         {
           timestamp: Date.now(),
-          source: 'Loop Global de Sincronização',
+          source: 'Importação completa',
           status: 'error',
-          message: `Falha na sincronização global: ${e.message}`,
+          message: `Falha na importação: ${e.message}`,
           count: 0,
         },
         ...prev,
@@ -314,9 +314,9 @@ export const DataSyncHub: React.FC<DataSyncHubProps> = ({
       setLogs((prev) => [
         {
           timestamp: Date.now(),
-          source: 'Banco do Aluno (upload)',
+          source: 'Seu arquivo',
           status: result.errors.length === 0 ? 'success' : result.questions.length > 0 ? 'warning' : 'error',
-          message: `${file.name}: ${added} questão(ões) adicionada(s), ${result.questions.length - added} já existiam/atualizadas, ${result.errors.length} linha(s) com erro.`,
+          message: `${file.name}: ${added} nova(s), ${result.questions.length - added} já existiam, ${result.errors.length} com erro.`,
           count: added,
         },
         ...prev,
@@ -334,15 +334,15 @@ export const DataSyncHub: React.FC<DataSyncHubProps> = ({
   };
 
   const handleResetSeed = () => {
-    if (confirm('Deseja limpar e restaurar o banco de dados removendo todas as duplicatas?')) {
+    if (confirm('Restaurar o banco de questões padrão e remover duplicatas?')) {
       const fresh = clearAndResetDatabase();
       onQuestionsUpdated(fresh);
       setLogs((prev) => [
         {
           timestamp: Date.now(),
-          source: 'System Reset & Cleanup',
+          source: 'Restauração',
           status: 'success',
-          message: `Banco limpo e restaurado. Total de questões únicas: ${fresh.length}.`,
+          message: `Banco restaurado: ${fresh.length} questões.`,
           count: fresh.length,
         },
         ...prev,
@@ -356,13 +356,12 @@ export const DataSyncHub: React.FC<DataSyncHubProps> = ({
       <div className="bg-white neo-border neo-shadow p-5 space-y-4">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
           <div>
-            <h2 className="text-xl md:text-2xl font-black text-black flex items-center gap-2">
+            <h2 className="text-2xl md:text-3xl font-black text-black flex items-center gap-2">
               <Database className="w-6 h-6 text-[#3B82F6]" />
-              INGESTÃO DE DADOS & PERSISTÊNCIA OFFLINE
+              Banco de questões
             </h2>
-            <p className="text-xs font-bold text-gray-700 mt-1">
-              Integração com a API pública <strong>enem.dev</strong> e os repositórios de dados abertos{' '}
-              <strong>beatrizmilz/BancoDeQuestoes</strong> e <strong>rodrigoborgesmachado/questoesConcursos</strong>.
+            <p className="text-sm font-bold text-gray-700 mt-1">
+              Importe questões do <strong>enem.dev</strong> e de repositórios abertos, ou envie as suas.
             </p>
           </div>
 
@@ -371,13 +370,13 @@ export const DataSyncHub: React.FC<DataSyncHubProps> = ({
             disabled={isLoadingEnem || isLoadingBeatriz}
             onClick={handleSyncAllBatch}
             className="px-5 py-3 text-xs md:text-sm font-black neo-btn bg-[#00E599] text-black disabled:opacity-50 flex items-center gap-2 whitespace-nowrap shadow-none"
-            title="Executa o loop contínuo de sincronização obtendo dezenas de questões de todas as fontes"
+            title="Importar de todas as fontes"
           >
             <Sparkles className="w-4 h-4" />
             <span>
               {isLoadingEnem || isLoadingBeatriz
-                ? 'Sincronizando em Loop...'
-                : '⚡ Sincronizar Tudo (Loop em Lote)'}
+                ? 'Importando...'
+                : '⚡ Importar tudo'}
             </span>
           </button>
         </div>
@@ -396,8 +395,8 @@ export const DataSyncHub: React.FC<DataSyncHubProps> = ({
         <div className="bg-[#FFFDE7] neo-border neo-shadow p-5 flex flex-col justify-between">
           <div>
             <div className="flex items-center justify-between pb-2 mb-3 border-b-2 border-black">
-              <span className="font-black text-sm bg-[#FFE600] px-2 py-0.5 neo-border-sm">
-                FONTE: API ENEM.DEV
+              <span className="font-black text-base bg-[#FFE600] px-2.5 py-1 neo-border-sm">
+                ENEM
               </span>
               <a
                 href="https://enem.dev"
@@ -410,9 +409,8 @@ export const DataSyncHub: React.FC<DataSyncHubProps> = ({
               </a>
             </div>
 
-            <p className="text-xs text-gray-800 leading-relaxed font-medium mb-4">
-              API aberta com banco histórico das provas do ENEM com parâmetros da Teoria de Resposta
-              ao Item (TRI), itens das 4 áreas e resoluções pedagógicas.
+            <p className="text-sm text-gray-800 leading-relaxed font-medium mb-4">
+              Provas antigas do ENEM, das 4 áreas, com os parâmetros usados no cálculo da nota TRI.
             </p>
           </div>
 
@@ -420,10 +418,10 @@ export const DataSyncHub: React.FC<DataSyncHubProps> = ({
             type="button"
             disabled={isLoadingEnem}
             onClick={handleSyncEnemDev}
-            className="w-full py-2.5 px-4 text-xs font-black neo-btn bg-[#FFE600] text-black disabled:opacity-50 flex items-center justify-center gap-2"
+            className="w-full py-2.5 px-4 text-sm font-black neo-btn bg-[#FFE600] text-black disabled:opacity-50 flex items-center justify-center gap-2"
           >
             <RefreshCw className={`w-4 h-4 ${isLoadingEnem ? 'animate-spin' : ''}`} />
-            <span>{isLoadingEnem ? 'Sincronizando ENEM...' : 'Sincronizar com enem.dev'}</span>
+            <span>{isLoadingEnem ? 'Importando ENEM...' : 'Importar do enem.dev'}</span>
           </button>
         </div>
 
@@ -431,8 +429,8 @@ export const DataSyncHub: React.FC<DataSyncHubProps> = ({
         <div className="bg-[#EBF7FF] neo-border neo-shadow p-5 flex flex-col justify-between">
           <div>
             <div className="flex items-center justify-between pb-2 mb-3 border-b-2 border-black">
-              <span className="font-black text-sm bg-[#00F0FF] px-2 py-0.5 neo-border-sm">
-                FONTE: BEATRIZMILZ REPO
+              <span className="font-black text-base bg-[#00F0FF] px-2.5 py-1 neo-border-sm">
+                UERJ e outros
               </span>
               <a
                 href="https://github.com/beatrizmilz/BancoDeQuestoes"
@@ -440,14 +438,13 @@ export const DataSyncHub: React.FC<DataSyncHubProps> = ({
                 rel="noreferrer"
                 className="text-xs font-bold text-gray-700 hover:text-black flex items-center gap-1"
               >
-                <span>GitHub Repo</span>
+                <span>GitHub</span>
                 <ExternalLink className="w-3 h-3" />
               </a>
             </div>
 
-            <p className="text-xs text-gray-800 leading-relaxed font-medium mb-4">
-              Repositório de dados abertos com exames de qualificação da UERJ, 1ª fase da FUVEST e
-              UNICAMP estruturados por disciplina e conteúdo programático.
+            <p className="text-sm text-gray-800 leading-relaxed font-medium mb-4">
+              Questões da UERJ (qualificação) e da 1ª fase da FUVEST e da UNICAMP, separadas por matéria e conteúdo.
             </p>
           </div>
 
@@ -455,19 +452,19 @@ export const DataSyncHub: React.FC<DataSyncHubProps> = ({
             type="button"
             disabled={isLoadingBeatriz}
             onClick={handleSyncBeatrizMilz}
-            className="w-full py-2.5 px-4 text-xs font-black neo-btn bg-[#00F0FF] text-black disabled:opacity-50 flex items-center justify-center gap-2"
+            className="w-full py-2.5 px-4 text-sm font-black neo-btn bg-[#00F0FF] text-black disabled:opacity-50 flex items-center justify-center gap-2"
           >
             <RefreshCw className={`w-4 h-4 ${isLoadingBeatriz ? 'animate-spin' : ''}`} />
-            <span>{isLoadingBeatriz ? 'Sincronizando UERJ...' : 'Sincronizar UERJ / Paulistas'}</span>
+            <span>{isLoadingBeatriz ? 'Importando...' : 'Importar UERJ, FUVEST e UNICAMP'}</span>
           </button>
         </div>
       </div>
 
       {/* Operações de Persistência Local (SQLite / Backup) */}
       <div className="bg-white neo-border neo-shadow p-5">
-        <h3 className="text-sm font-black uppercase tracking-wider text-black pb-2 mb-4 border-b-2 border-black flex items-center justify-between">
-          <span>Persistência Local Offline (SQLite Windows 11)</span>
-          <span className="text-xs text-green-700 font-bold">100% Funcional Offline</span>
+        <h3 className="text-base font-black uppercase tracking-wider text-black pb-2 mb-4 border-b-2 border-black flex items-center justify-between">
+          <span>Backup e restauração</span>
+          <span className="text-xs text-green-700 font-bold">Funciona sem internet</span>
         </h3>
 
         <div className="flex flex-wrap items-center gap-3">
@@ -477,7 +474,7 @@ export const DataSyncHub: React.FC<DataSyncHubProps> = ({
             className="px-4 py-2 text-xs font-black neo-btn bg-[#00E599] text-black flex items-center gap-2"
           >
             <Download className="w-4 h-4" />
-            <span>Exportar Script SQLite Completo (.sql)</span>
+            <span>Exportar backup (.sql)</span>
           </button>
 
           <button
@@ -485,22 +482,20 @@ export const DataSyncHub: React.FC<DataSyncHubProps> = ({
             onClick={handleResetSeed}
             className="px-4 py-2 text-xs font-bold neo-btn bg-gray-200 text-black hover:bg-red-100"
           >
-            Restaurar Banco de Questões Padrão
+            Restaurar questões padrão
           </button>
         </div>
       </div>
 
       {/* Enviar o próprio banco de questões (upload .json / .csv) */}
       <div className="bg-white neo-border neo-shadow p-5 space-y-4">
-        <h3 className="text-sm font-black uppercase tracking-wider text-black pb-2 border-b-2 border-black flex items-center gap-2">
+        <h3 className="text-base font-black uppercase tracking-wider text-black pb-2 border-b-2 border-black flex items-center gap-2">
           <Upload className="w-4 h-4 text-[#00AA44]" />
-          <span>Enviar meu Banco de Questões</span>
+          <span>Enviar minhas questões</span>
         </h3>
 
-        <p className="text-xs font-bold text-gray-700 leading-relaxed">
-          Tem um banco de questões próprio? Baixe o arquivo modelo, preencha com as suas questões e envie de volta.
-          Aceitamos <strong>.json</strong> e <strong>.csv</strong> (planilha do Excel salva como CSV). As questões enviadas
-          entram no banco junto com as demais, e questões repetidas não são duplicadas.
+        <p className="text-sm font-bold text-gray-700 leading-relaxed">
+          Baixe o modelo, preencha com as suas questões e envie de volta. Aceita <strong>.json</strong> e <strong>.csv</strong> (Excel salvo como CSV). Questões repetidas não são duplicadas.
         </p>
 
         <div className="flex flex-wrap items-center gap-3">
@@ -510,7 +505,7 @@ export const DataSyncHub: React.FC<DataSyncHubProps> = ({
             className="px-4 py-2 text-xs font-black neo-btn bg-white dark:bg-[#27272A] text-black dark:text-white flex items-center gap-2"
           >
             <Download className="w-4 h-4" />
-            <span>Baixar modelo (.csv / Excel)</span>
+            <span>Modelo (.csv / Excel)</span>
           </button>
 
           <button
@@ -519,7 +514,7 @@ export const DataSyncHub: React.FC<DataSyncHubProps> = ({
             className="px-4 py-2 text-xs font-black neo-btn bg-white dark:bg-[#27272A] text-black dark:text-white flex items-center gap-2"
           >
             <Download className="w-4 h-4" />
-            <span>Baixar modelo (.json)</span>
+            <span>Modelo (.json)</span>
           </button>
 
           <button
@@ -528,7 +523,7 @@ export const DataSyncHub: React.FC<DataSyncHubProps> = ({
             className="px-4 py-2 text-xs font-black neo-btn bg-[#00E599] text-black flex items-center gap-2"
           >
             <Upload className="w-4 h-4" />
-            <span>Enviar arquivo de questões</span>
+            <span>Enviar arquivo</span>
           </button>
 
           <input
@@ -557,9 +552,7 @@ export const DataSyncHub: React.FC<DataSyncHubProps> = ({
               <p className="font-bold">{importReport.fatalError}</p>
             ) : (
               <p className="font-bold">
-                {importReport.totalRows} linha(s) lida(s): {importReport.valid} válida(s) —{' '}
-                {importReport.added} nova(s) no banco, {importReport.valid - importReport.added} já existia(m) —{' '}
-                {importReport.errors.length} com erro.
+                {importReport.totalRows} linha(s): {importReport.valid} válida(s), {importReport.added} nova(s), {importReport.valid - importReport.added} já existia(m), {importReport.errors.length} com erro.
               </p>
             )}
 
@@ -577,7 +570,7 @@ export const DataSyncHub: React.FC<DataSyncHubProps> = ({
         )}
 
         <details className="text-xs">
-          <summary className="cursor-pointer font-black text-black">Ver campos e formato do arquivo</summary>
+          <summary className="cursor-pointer font-black text-black">Ver formato do arquivo</summary>
           <div className="mt-3 overflow-x-auto">
             <table className="w-full text-left border-collapse">
               <thead>
@@ -598,8 +591,7 @@ export const DataSyncHub: React.FC<DataSyncHubProps> = ({
               </tbody>
             </table>
             <p className="mt-2 text-gray-700">
-              No CSV, a primeira linha precisa ter exatamente esses nomes de coluna. Para quebrar linha dentro de uma célula
-              do Excel, use Alt+Enter.
+              No CSV, a primeira linha deve ter exatamente esses nomes de coluna. Para quebrar linha numa célula do Excel, use Alt+Enter.
             </p>
           </div>
         </details>
@@ -607,9 +599,9 @@ export const DataSyncHub: React.FC<DataSyncHubProps> = ({
 
       {/* Apagar questões do banco (com filtros e confirmação) */}
       <div className="bg-[#FFF0F3] neo-border neo-shadow p-5">
-        <h3 className="text-sm font-black uppercase tracking-wider text-black pb-2 mb-4 border-b-2 border-black flex items-center gap-2">
+        <h3 className="text-base font-black uppercase tracking-wider text-black pb-2 mb-4 border-b-2 border-black flex items-center gap-2">
           <Trash2 className="w-4 h-4 text-[#FF3366]" />
-          <span>Apagar Questões do Banco de Dados</span>
+          <span>Apagar questões</span>
         </h3>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
@@ -653,7 +645,7 @@ export const DataSyncHub: React.FC<DataSyncHubProps> = ({
           </label>
 
           <label className="text-xs font-black text-black space-y-1 block">
-            <span>Conteúdo específico</span>
+            <span>Conteúdo</span>
             <select
               value={deleteTopic}
               onChange={(e) => setDeleteTopic(e.target.value)}
@@ -670,8 +662,8 @@ export const DataSyncHub: React.FC<DataSyncHubProps> = ({
         </div>
 
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <span className="text-xs font-bold text-gray-800">
-            {deleteMatchCount} questão(ões) correspondem aos filtros selecionados.
+          <span className="text-sm font-bold text-gray-800">
+            {deleteMatchCount} questão(ões) nos filtros escolhidos.
           </span>
           <button
             type="button"
@@ -680,7 +672,7 @@ export const DataSyncHub: React.FC<DataSyncHubProps> = ({
             className="px-4 py-2 text-xs font-black neo-btn bg-[#FF3366] text-white disabled:opacity-40 flex items-center gap-2"
           >
             <Trash2 className="w-4 h-4" />
-            <span>Apagar questões selecionadas</span>
+            <span>Apagar</span>
           </button>
         </div>
       </div>
@@ -704,20 +696,19 @@ export const DataSyncHub: React.FC<DataSyncHubProps> = ({
             </h4>
 
             <p className="text-sm font-bold text-gray-900">
-              Você está prestes a apagar <span className="text-[#FF3366]">{deleteMatchCount}</span> questão(ões) do banco
-              de dados. Esta ação não pode ser desfeita.
+              Você vai apagar <span className="text-[#FF3366]">{deleteMatchCount}</span> questão(ões). Isso não pode ser desfeito.
             </p>
 
             <ul className="text-xs font-mono bg-[#F5F2EA] neo-border-sm p-3 space-y-1 text-black">
               <li>Vestibular: <strong>{deleteVestibular === 'TODOS' ? 'Todos' : deleteVestibular}</strong></li>
               <li>Matéria: <strong>{deleteDiscipline === 'TODAS' ? 'Todas' : deleteDiscipline}</strong></li>
-              <li>Conteúdo específico: <strong>{deleteTopic === 'TODOS' ? 'Todos' : deleteTopic}</strong></li>
+              <li>Conteúdo: <strong>{deleteTopic === 'TODOS' ? 'Todos' : deleteTopic}</strong></li>
             </ul>
 
             {isDeletingEverything && (
               <label className="block text-xs font-black text-black space-y-1">
                 <span>
-                  Nenhum filtro selecionado: isso apaga TODAS as questões. Digite <strong>APAGAR</strong> para confirmar.
+                  Sem filtros, isso apaga TODAS as questões. Digite <strong>APAGAR</strong> para confirmar.
                 </span>
                 <input
                   type="text"
@@ -756,7 +747,7 @@ export const DataSyncHub: React.FC<DataSyncHubProps> = ({
       <div className="bg-[#111111] text-gray-200 neo-border neo-shadow p-4 font-mono text-xs">
         <div className="flex items-center gap-2 pb-2 mb-3 border-b border-gray-700 text-[#00E599] font-bold">
           <Terminal className="w-4 h-4" />
-          <span>Console de Ingestão e Diagnóstico de Conexão</span>
+          <span>Registro</span>
         </div>
 
         <div className="space-y-2 max-h-48 overflow-y-auto">

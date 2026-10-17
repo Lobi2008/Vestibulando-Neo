@@ -52,6 +52,7 @@ export default function App() {
 
   // Mapa de todos os rascunhos salvos no dispositivo
   const [savedStrokesMap, setSavedStrokesMap] = useState<Record<string, DrawingStroke[]>>(() => getAllSavedStrokes());
+  const [isRascunhoActive, setIsRascunhoActive] = useState<boolean>(false);
 
   // Modo Escuro com persistência em localStorage
   const [isDarkMode, setIsDarkMode] = useState<boolean>(() => {
@@ -426,6 +427,7 @@ export default function App() {
                 currentIndex={currentQuestionIndex}
                 totalCount={filteredQuestions.length}
                 isDarkMode={isDarkMode}
+                onRascunhoActiveChange={setIsRascunhoActive}
               />
             ) : (
               <div className="bg-white dark:bg-[#18181B] neo-border neo-shadow p-8 text-center space-y-4">
@@ -514,13 +516,22 @@ export default function App() {
 
       {/* Rodapé Desktop */}
       <footer className="bg-white dark:bg-[#18181B] border-t-3 border-black dark:border-gray-700 py-3 px-4 text-center text-xs font-bold text-gray-700 dark:text-gray-300 transition-colors">
-        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2">
-          <span>
-            Vestibulando Neo Desktop • ENEM (TRI 3PL), UERJ & Concursos • Windows 11
-          </span>
-          <div className="flex items-center gap-4 text-xs font-mono">
-            <span>Atalhos: [A-E] Alternativas • [S] Pular Questão • [R] Rascunho Stylus • [CTRL+Z] Desfazer</span>
-          </div>
+        <div className="max-w-7xl mx-auto flex items-center justify-end gap-3 text-xs font-mono">
+          {activeTab === 'questions' && currentQuestion && (
+            <>
+              <span>[A-E] Alternativas</span>
+              <span>•</span>
+              <span>[S] Pular Questão</span>
+              <span>•</span>
+              <span>[R] Rascunho Stylus</span>
+            </>
+          )}
+          {activeTab === 'questions' && currentQuestion && isRascunhoActive && (
+            <span>•</span>
+          )}
+          {isRascunhoActive && (
+            <span>[CTRL+Z] Desfazer</span>
+          )}
         </div>
       </footer>
     </div>

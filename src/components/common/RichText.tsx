@@ -25,7 +25,7 @@ const RichImage: React.FC<RichImageProps> = ({ src, alt, className = '' }) => {
         rel="noopener noreferrer"
         className="text-xs font-bold underline text-blue-700 break-all"
       >
-        [imagem indisponível — abrir link]
+        Imagem indisponível (abrir link)
       </a>
     );
   }

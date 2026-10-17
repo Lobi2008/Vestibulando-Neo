@@ -195,12 +195,12 @@ export const PerformanceDashboard: React.FC<PerformanceDashboardProps> = ({
       {/* Título da Seção */}
       <div className="flex flex-wrap items-center justify-between gap-3 bg-white neo-border neo-shadow p-4">
         <div>
-          <h2 className="text-xl md:text-2xl font-black text-black flex items-center gap-2">
+          <h2 className="text-2xl md:text-3xl font-black text-black flex items-center gap-2">
             <BarChart2 className="w-6 h-6 text-[#FF5A36]" />
-            DASHBOARD DE DESEMPENHO & EVOLUÇÃO
+            Desempenho
           </h2>
-          <p className="text-xs font-bold text-gray-700">
-            Acompanhe sua nota TRI ao longo do tempo, acerto por conteúdos específicos e métricas oficiais.
+          <p className="text-sm font-bold text-gray-700">
+            Sua evolução e seus acertos por conteúdo.
           </p>
         </div>
 
@@ -208,10 +208,10 @@ export const PerformanceDashboard: React.FC<PerformanceDashboardProps> = ({
           type="button"
           onClick={handleDownloadSqlite}
           className="px-3.5 py-2 text-xs font-black neo-btn bg-[#00E599] text-black flex items-center gap-1.5"
-          title="Exportar base de dados local completa para SQLite / SQL"
+          title="Baixar backup dos dados"
         >
           <Download className="w-4 h-4" />
-          <span>Exportar Banco SQLite (.sql)</span>
+          <span>Exportar backup (.sql)</span>
         </button>
       </div>
 
@@ -220,18 +220,18 @@ export const PerformanceDashboard: React.FC<PerformanceDashboardProps> = ({
         {/* NOTA TRI */}
         <div className="bg-[#FFE600] neo-border neo-shadow p-4">
           <div className="flex items-center justify-between text-xs font-black mb-1">
-            <span>ESTIMATIVA ENEM (TRI)</span>
+            <span>NOTA ENEM (TRI)</span>
             <Compass className="w-4 h-4 text-black" />
           </div>
           <div className="text-3xl md:text-4xl font-black text-black">
             {enemStats.total > 0 ? enemStats.triResult.enemScore.toFixed(1) : '500.0'}
           </div>
           <div className="text-[11px] font-bold text-black mt-2 pt-2 border-t border-black flex justify-between">
-            <span>Coerência Pedagógica:</span>
+            <span>Coerência:</span>
             <span className="font-mono">{enemStats.triResult.coherenceScore}%</span>
           </div>
-          <div className="text-[10px] text-gray-800 font-medium mt-1">
-            {enemStats.total} questões do ENEM avaliadas
+          <div className="text-xs text-gray-800 font-medium mt-1">
+            {enemStats.total} questões do ENEM
           </div>
         </div>
 
@@ -253,7 +253,7 @@ export const PerformanceDashboard: React.FC<PerformanceDashboardProps> = ({
             <span>Aproveitamento:</span>
             <span className="font-mono">{uerjStats.scoreResult.percentage}%</span>
           </div>
-          <div className="text-[10px] text-gray-800 font-medium mt-1">
+          <div className="text-xs text-gray-800 font-medium mt-1">
             {uerjStats.correct} acertos de {uerjStats.total} questões
           </div>
         </div>
@@ -261,7 +261,7 @@ export const PerformanceDashboard: React.FC<PerformanceDashboardProps> = ({
         {/* TAXA GERAL */}
         <div className="bg-[#FF5A36] text-white neo-border neo-shadow p-4">
           <div className="flex items-center justify-between text-xs font-black mb-1">
-            <span>TAXA GERAL DE ACERTO</span>
+            <span>TAXA DE ACERTO</span>
             <TrendingUp className="w-4 h-4 text-white" />
           </div>
           <div className="text-3xl md:text-4xl font-black text-white">
@@ -270,10 +270,10 @@ export const PerformanceDashboard: React.FC<PerformanceDashboardProps> = ({
               : '0%'}
           </div>
           <div className="text-[11px] font-bold text-orange-100 mt-2 pt-2 border-t border-white/40 flex justify-between">
-            <span>Total de Resoluções:</span>
-            <span className="font-mono">{attempts.length} itens</span>
+            <span>Resolvidas:</span>
+            <span className="font-mono">{attempts.length} questões</span>
           </div>
-          <div className="text-[10px] text-orange-200 font-medium mt-1">
+          <div className="text-xs text-orange-200 font-medium mt-1">
             Acertos: {attempts.filter((a) => a.isCorrect).length} • Erros:{' '}
             {attempts.filter((a) => !a.isCorrect).length}
           </div>
@@ -282,18 +282,18 @@ export const PerformanceDashboard: React.FC<PerformanceDashboardProps> = ({
         {/* TEMPO MÉDIO */}
         <div className="bg-white neo-border neo-shadow p-4">
           <div className="flex items-center justify-between text-xs font-black mb-1 text-gray-700">
-            <span>TEMPO MÉDIO POR ITEM</span>
+            <span>TEMPO POR QUESTÃO</span>
             <Clock className="w-4 h-4 text-black" />
           </div>
           <div className="text-3xl md:text-4xl font-black text-black">
             {Math.floor(avgTimeTotal / 60)}m {avgTimeTotal % 60}s
           </div>
           <div className="text-[11px] font-bold text-gray-700 mt-2 pt-2 border-t border-black flex justify-between">
-            <span>Ritmo Prova:</span>
-            <span className="font-mono text-green-700">≤ 3min / item</span>
+            <span>Ritmo ideal:</span>
+            <span className="font-mono text-green-700">até 3 min</span>
           </div>
-          <div className="text-[10px] text-gray-500 font-medium mt-1">
-            {avgTimeTotal <= 180 ? 'Ritmo excelente de prova!' : 'Atenção ao tempo limite!'}
+          <div className="text-xs text-gray-500 font-medium mt-1">
+            {avgTimeTotal <= 180 ? 'Ritmo ótimo!' : 'Tente ser mais rápido.'}
           </div>
         </div>
       </div>
@@ -304,19 +304,19 @@ export const PerformanceDashboard: React.FC<PerformanceDashboardProps> = ({
       <div className="bg-white neo-border neo-shadow p-5">
         <div className="flex flex-wrap items-center justify-between gap-3 pb-3 mb-4 border-b-2 border-black">
           <div>
-            <h3 className="text-sm font-black uppercase tracking-wider text-black flex items-center gap-1.5">
+            <h3 className="text-base font-black uppercase tracking-wider text-black flex items-center gap-1.5">
               <TrendingUp className="w-4 h-4 text-[#FF5A36]" />
-              <span>Evolução Temporal: Estimativa ENEM (TRI) vs Taxa Média de Acerto</span>
+              <span>Evolução</span>
             </h3>
-            <p className="text-xs text-gray-600">
-              Acompanhamento contínuo da sua proficiência calibrada questão a questão.
+            <p className="text-sm text-gray-600">
+              Como sua nota e seus acertos mudaram a cada questão.
             </p>
           </div>
 
           <div className="flex items-center gap-4 text-xs font-extrabold">
             <span className="flex items-center gap-1.5">
               <span className="w-3.5 h-3.5 bg-[#FFE600] border-2 border-black inline-block" />
-              <span>Nota TRI (Escala 300 - 900)</span>
+              <span>Nota TRI</span>
             </span>
             <span className="flex items-center gap-1.5">
               <span className="w-3.5 h-3.5 bg-[#00F0FF] border-2 border-black inline-block" />
@@ -327,16 +327,14 @@ export const PerformanceDashboard: React.FC<PerformanceDashboardProps> = ({
 
         {evolutionSeries.length === 0 ? (
           <div className="text-center py-12 text-gray-400 text-xs">
-            Resolva algumas questões para visualizar o gráfico dinâmico de evolução.
+            Resolva algumas questões para ver o gráfico.
           </div>
         ) : (
           <div className="w-full overflow-x-auto">
             {/* SVG Chart Neobrutalista Proporcional */}
             <div className="min-w-[650px] h-[300px] relative bg-[#FAF8F5] neo-border-sm p-5 flex flex-col justify-between">
-              <div className="flex justify-between items-center text-[11px] font-mono font-bold text-black border-b border-gray-300 pb-2">
-                <span>Escala (300-900 / 0-100%)</span>
-                <span>Gráfico Proporcional & Legível</span>
-                <span>Evolução Cronológica</span>
+              <div className="flex justify-between items-center text-xs font-mono font-bold text-black border-b border-gray-300 pb-2">
+                <span>Nota: 300–900 • Acertos: 0–100%</span>
               </div>
               <svg className="w-full h-[190px] overflow-visible my-1" viewBox="0 0 650 180" preserveAspectRatio="xMidYMid meet">
                 {/* Linhas de Grade de Fundo */}
@@ -418,8 +416,8 @@ export const PerformanceDashboard: React.FC<PerformanceDashboardProps> = ({
               {/* Rótulos dos Eixos */}
               <div className="flex justify-between items-center text-xs font-mono font-bold text-black border-t border-gray-300 pt-2">
                 <span>Início (Q1)</span>
-                <span className="text-gray-600 text-[11px]">Resolução Sequencial de Questões</span>
-                <span>Último Item (Q{evolutionSeries.length})</span>
+                <span className="text-gray-600 text-[11px]">Questões em ordem</span>
+                <span>Última (Q{evolutionSeries.length})</span>
               </div>
             </div>
           </div>
@@ -433,22 +431,22 @@ export const PerformanceDashboard: React.FC<PerformanceDashboardProps> = ({
         <div className="lg:col-span-2 bg-white neo-border neo-shadow p-5">
           <div className="flex flex-wrap items-center justify-between pb-2 mb-4 border-b-2 border-black">
             <div>
-              <h3 className="text-sm font-black uppercase tracking-wider text-black flex items-center gap-1.5">
+              <h3 className="text-base font-black uppercase tracking-wider text-black flex items-center gap-1.5">
                 <Layers className="w-4 h-4 text-black" />
-                <span>Evolução por Disciplina & Conteúdos Específicos</span>
+                <span>Por disciplina</span>
               </h3>
-              <p className="text-xs text-gray-600">
-                Clique em qualquer matéria para expandir os acertos por conteúdo detalhado.
+              <p className="text-sm text-gray-600">
+                Clique em uma matéria para ver os conteúdos.
               </p>
             </div>
             <span className="text-xs text-gray-500 font-bold">
-              {disciplineHierarchicalStats.length} matérias avaliadas
+              {disciplineHierarchicalStats.length} matérias
             </span>
           </div>
 
           {disciplineHierarchicalStats.length === 0 ? (
             <div className="text-center py-8 text-gray-500 text-sm">
-              Nenhuma questão resolvida ainda. Comece a praticar no Caderno de Questões!
+              Nenhuma questão resolvida ainda.
             </div>
           ) : (
             <div className="space-y-4">
@@ -480,7 +478,7 @@ export const PerformanceDashboard: React.FC<PerformanceDashboardProps> = ({
                             {item.discipline}
                           </span>
                           <span className="text-xs text-gray-500 ml-2 font-mono">
-                            ({item.topics.length} conteúdos treinados)
+                            ({item.topics.length} conteúdos)
                           </span>
                         </div>
                       </div>
@@ -508,7 +506,7 @@ export const PerformanceDashboard: React.FC<PerformanceDashboardProps> = ({
                     {isExpanded && (
                       <div className="p-4 bg-[#F5F2EA] border-t-2 border-black space-y-3">
                         <span className="text-[11px] font-black uppercase text-gray-700 tracking-wider block">
-                          Desempenho por Conteúdo Específico de {item.discipline}:
+                          Conteúdos de {item.discipline}:
                         </span>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
@@ -552,28 +550,28 @@ export const PerformanceDashboard: React.FC<PerformanceDashboardProps> = ({
 
         {/* Ofensiva (Streak) & Resumo do Perfil */}
         <div className="bg-[#FFFDF5] neo-border neo-shadow p-5 space-y-4">
-          <h3 className="text-sm font-black uppercase tracking-wider text-black pb-2 border-b-2 border-black flex items-center gap-1.5">
+          <h3 className="text-base font-black uppercase tracking-wider text-black pb-2 border-b-2 border-black flex items-center gap-1.5">
             <Flame className="w-4 h-4 text-orange-500" />
-            <span>Ofensiva & Metas</span>
+            <span>Ofensiva e metas</span>
           </h3>
 
           <div className="bg-[#FF5A36] text-white p-4 neo-border text-center">
             <div className="text-4xl font-black">{profile.currentStreak} DIAS</div>
             <p className="text-xs font-bold text-orange-100 uppercase tracking-wider mt-1">
-              Dias Consecutivos Ativos
+              Dias seguidos
             </p>
             <div className="text-xs text-yellow-200 mt-2 font-mono">
-              Recorde Histórico: {profile.longestStreak} dias
+              Recorde: {profile.longestStreak} dias
             </div>
           </div>
 
           <div className="space-y-2 text-xs font-bold bg-white p-3 neo-border-sm">
             <div className="flex justify-between py-1 border-b border-gray-200">
-              <span className="text-gray-600">Vestibular Alvo:</span>
+              <span className="text-gray-600">Vestibular:</span>
               <span className="font-black text-black">{profile.targetExam}</span>
             </div>
             <div className="flex justify-between py-1 border-b border-gray-200">
-              <span className="text-gray-600">Curso dos Sonhos:</span>
+              <span className="text-gray-600">Curso:</span>
               <span className="font-black text-black">{profile.targetCourse}</span>
             </div>
             <div className="flex justify-between py-1">
@@ -588,9 +586,9 @@ export const PerformanceDashboard: React.FC<PerformanceDashboardProps> = ({
 
       {/* Histórico Recente de Questões Resolvidas */}
       <div className="bg-white neo-border neo-shadow p-5">
-        <h3 className="text-sm font-black uppercase tracking-wider text-black pb-2 mb-3 border-b-2 border-black flex items-center justify-between">
-          <span>Histórico Permanente de Tentativas ({attempts.length})</span>
-          <span className="text-xs text-gray-500 font-normal">Armazenado no SQLite local</span>
+        <h3 className="text-base font-black uppercase tracking-wider text-black pb-2 mb-3 border-b-2 border-black flex items-center justify-between">
+          <span>Histórico ({attempts.length})</span>
+          <span className="text-xs text-gray-500 font-normal">Salvo neste computador</span>
         </h3>
 
         {attempts.length === 0 ? (
@@ -602,7 +600,7 @@ export const PerformanceDashboard: React.FC<PerformanceDashboardProps> = ({
                 <tr className="bg-[#111111] text-white font-black">
                   <th className="p-2 border border-black">Vestibular</th>
                   <th className="p-2 border border-black">Disciplina</th>
-                  <th className="p-2 border border-black">Conteúdo Específico</th>
+                  <th className="p-2 border border-black">Conteúdo</th>
                   <th className="p-2 border border-black text-center">Resposta</th>
                   <th className="p-2 border border-black text-center">Resultado</th>
                   <th className="p-2 border border-black text-center">Tempo</th>
@@ -638,7 +636,7 @@ export const PerformanceDashboard: React.FC<PerformanceDashboardProps> = ({
                         onClick={() => onSelectQuestion(att.questionId)}
                         className="px-2 py-1 bg-white hover:bg-black hover:text-white neo-border-sm font-bold text-[10px]"
                       >
-                        Rever Item
+                        Rever
                       </button>
                     </td>
                   </tr>

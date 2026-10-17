@@ -37,25 +37,25 @@ interface DigitalPenCanvasProps {
 }
 
 const LIGHT_PEN_COLORS = [
-  { name: 'Nanquim', hex: '#111111' },
-  { name: 'Azul Caneta', hex: '#0055FF' },
-  { name: 'Vermelho Correção', hex: '#FF0033' },
-  { name: 'Verde Gabarito', hex: '#00AA44' },
+  { name: 'Preto', hex: '#111111' },
+  { name: 'Azul', hex: '#0055FF' },
+  { name: 'Vermelho', hex: '#FF0033' },
+  { name: 'Verde', hex: '#00AA44' },
 ];
 
 const DARK_PEN_COLORS = [
   { name: 'Branco', hex: '#FFFFFF' },
-  { name: 'Ciano Neobrutal', hex: '#00F0FF' },
-  { name: 'Amarelo Flúor', hex: '#FFE600' },
-  { name: 'Rosa Choque', hex: '#FF3399' },
-  { name: 'Verde Neon', hex: '#00E599' },
+  { name: 'Ciano', hex: '#00F0FF' },
+  { name: 'Amarelo', hex: '#FFE600' },
+  { name: 'Rosa', hex: '#FF3399' },
+  { name: 'Verde', hex: '#00E599' },
 ];
 
 const HIGHLIGHTER_COLORS = [
-  { name: 'Amarelo Flúor', hex: '#FFE600' },
-  { name: 'Verde Menta', hex: '#00F0FF' },
-  { name: 'Rosa Choque', hex: '#FF3399' },
-  { name: 'Laranja Luz', hex: '#FF8800' },
+  { name: 'Amarelo', hex: '#FFE600' },
+  { name: 'Ciano', hex: '#00F0FF' },
+  { name: 'Rosa', hex: '#FF3399' },
+  { name: 'Laranja', hex: '#FF8800' },
 ];
 
 export const DigitalPenCanvas: React.FC<DigitalPenCanvasProps> = ({
@@ -465,7 +465,7 @@ export const DigitalPenCanvas: React.FC<DigitalPenCanvasProps> = ({
       >
         {mode === 'overlay' && (
           <span className="text-xs font-black uppercase tracking-wider bg-black text-white px-2 py-0.5 mr-1">
-            ✍️ Riscar Prova (Sobre o Texto)
+            ✍️ Riscar sobre o texto
           </span>
         )}
 
@@ -479,7 +479,7 @@ export const DigitalPenCanvas: React.FC<DigitalPenCanvasProps> = ({
                 ? 'bg-[#111111] text-white dark:bg-[#00F0FF] dark:text-black shadow-none'
                 : 'bg-white text-black hover:bg-yellow-100 dark:bg-[#18181B] dark:text-white dark:hover:bg-gray-700'
             }`}
-            title="Caneta de Precisão (Pressão nativa da mesa)"
+            title="Caneta"
           >
             <Pen className="w-3.5 h-3.5" />
             <span className="hidden sm:inline">Caneta</span>
@@ -493,7 +493,7 @@ export const DigitalPenCanvas: React.FC<DigitalPenCanvasProps> = ({
                 ? 'bg-[#111111] text-white dark:bg-[#00F0FF] dark:text-black shadow-none'
                 : 'bg-white text-black hover:bg-yellow-100 dark:bg-[#18181B] dark:text-white dark:hover:bg-gray-700'
             }`}
-            title="Marca-texto Translúcido"
+            title="Marca-texto"
           >
             <Highlighter className="w-3.5 h-3.5" />
             <span className="hidden sm:inline">Marca-texto</span>
@@ -507,7 +507,7 @@ export const DigitalPenCanvas: React.FC<DigitalPenCanvasProps> = ({
                 ? 'bg-[#111111] text-white dark:bg-[#00F0FF] dark:text-black shadow-none'
                 : 'bg-white text-black hover:bg-yellow-100 dark:bg-[#18181B] dark:text-white dark:hover:bg-gray-700'
             }`}
-            title="Borracha de Rascunho"
+            title="Borracha"
           >
             <Eraser className="w-3.5 h-3.5" />
             <span className="hidden sm:inline">Borracha</span>
@@ -549,7 +549,7 @@ export const DigitalPenCanvas: React.FC<DigitalPenCanvasProps> = ({
         <div className="flex items-center gap-2">
           {/* Espessura */}
           <div className="flex items-center gap-1 text-xs font-bold bg-white dark:bg-[#18181B] px-1.5 py-0.5 neo-border-sm">
-            <span className="text-[10px] text-gray-600 dark:text-gray-400">Esp:</span>
+            <span className="text-[10px] text-gray-600 dark:text-gray-400">Traço:</span>
             <input
               type="range"
               min="1"
@@ -557,7 +557,7 @@ export const DigitalPenCanvas: React.FC<DigitalPenCanvasProps> = ({
               value={baseWidth}
               onChange={(e) => setBaseWidth(Number(e.target.value))}
               className="w-14 accent-black dark:accent-[#00F0FF] cursor-pointer"
-              title={`Espessura base: ${baseWidth}px`}
+              title={`Espessura: ${baseWidth}px`}
             />
             <span className="text-[10px] font-mono text-black dark:text-white">{baseWidth}px</span>
           </div>
@@ -575,10 +575,10 @@ export const DigitalPenCanvas: React.FC<DigitalPenCanvasProps> = ({
                 ? 'bg-[#00E599] text-black'
                 : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
             }`}
-            title="Estabilizador de Traço para Mesa Digitalizadora (elimina micro-tremores manuais)"
+            title="Estabilizador de traço (reduz tremores)"
           >
             <Sliders className="w-3 h-3" />
-            <span className="hidden md:inline">Filtro:</span>
+            <span className="hidden sm:inline">Suavizar:</span>
             <span>{stabilizerLevel === 'off' ? 'Off' : stabilizerLevel === 'medium' ? 'Médio' : 'Alto'}</span>
           </button>
 
@@ -592,10 +592,10 @@ export const DigitalPenCanvas: React.FC<DigitalPenCanvasProps> = ({
                 )
               }
               className="px-2 py-1 text-[11px] font-bold bg-white dark:bg-[#18181B] text-black dark:text-white neo-border-sm flex items-center gap-1 hover:bg-gray-100 dark:hover:bg-gray-700"
-              title="Trocar folha: Quadriculado / Pautado / Liso"
+              title="Trocar papel"
             >
               <Grid className="w-3 h-3" />
-              <span className="capitalize">{paperPattern === 'grid' ? 'Grid' : paperPattern === 'lined' ? 'Pautas' : 'Liso'}</span>
+              <span className="capitalize">{paperPattern === 'grid' ? 'Quadriculado' : paperPattern === 'lined' ? 'Pautado' : 'Liso'}</span>
             </button>
           )}
 
@@ -608,7 +608,7 @@ export const DigitalPenCanvas: React.FC<DigitalPenCanvasProps> = ({
                 ? 'bg-[#00E599] text-black scale-105' 
                 : 'bg-white dark:bg-[#18181B] text-black dark:text-white hover:bg-green-100 dark:hover:bg-green-950'
             }`}
-            title="Salvar Rascunho no Banco de Dados"
+            title="Salvar rascunho"
           >
             {savedFeedback ? (
               <>
@@ -648,7 +648,7 @@ export const DigitalPenCanvas: React.FC<DigitalPenCanvasProps> = ({
               onClick={handleClearAll}
               disabled={strokes.length === 0}
               className="p-1.5 bg-[#FF3366] text-white neo-border-sm disabled:opacity-40 hover:bg-red-600"
-              title="Limpar Rascunho"
+              title="Limpar"
             >
               <Trash2 className="w-3.5 h-3.5" />
             </button>
@@ -658,7 +658,7 @@ export const DigitalPenCanvas: React.FC<DigitalPenCanvasProps> = ({
               type="button"
               onClick={() => setIsExpanded(!isExpanded)}
               className="p-1.5 bg-white dark:bg-[#18181B] neo-border-sm hover:bg-gray-100 dark:hover:bg-gray-700 ml-1"
-              title={isExpanded ? 'Restaurar tamanho' : 'Maximizar área de rascunho'}
+              title={isExpanded ? 'Restaurar' : 'Maximizar'}
             >
               {isExpanded ? <Minimize2 className="w-3.5 h-3.5 text-black dark:text-white" /> : <Maximize2 className="w-3.5 h-3.5 text-black dark:text-white" />}
             </button>
@@ -668,7 +668,7 @@ export const DigitalPenCanvas: React.FC<DigitalPenCanvasProps> = ({
                 type="button"
                 onClick={onClose}
                 className="p-1.5 bg-[#FF3366] text-white neo-border-sm hover:bg-red-700 ml-1"
-                title="Fechar mesa de rascunho"
+                title="Fechar"
               >
                 <X className="w-3.5 h-3.5" />
               </button>
@@ -678,7 +678,7 @@ export const DigitalPenCanvas: React.FC<DigitalPenCanvasProps> = ({
       </div>
 
       {/* Indicador de Status da Caneta / Mesa Digitalizadora */}
-      <div className="flex items-center justify-between px-3 py-1 bg-white dark:bg-[#18181B] border-b-2 border-black dark:border-gray-700 text-[10px] font-mono text-gray-600 dark:text-gray-400">
+      <div className="flex items-center justify-between px-3 py-1 bg-white dark:bg-[#18181B] border-b-2 border-black dark:border-gray-700 text-[11px] font-mono text-gray-600 dark:text-gray-400">
         <div className="flex items-center gap-2">
           <span className="flex items-center gap-1">
             <span
@@ -686,7 +686,7 @@ export const DigitalPenCanvas: React.FC<DigitalPenCanvasProps> = ({
                 isPenDetected ? 'bg-green-500 animate-pulse' : 'bg-blue-400'
               }`}
             />
-            {isPenDetected ? 'Mesa / Stylus Conectada' : 'Caneta / Mouse Ativo'}
+            {isPenDetected ? 'Caneta detectada' : 'Mouse ou caneta'}
           </span>
           {isPenDetected && (
             <span className="bg-yellow-100 dark:bg-yellow-950 px-1 border border-black dark:border-yellow-700 text-black dark:text-yellow-300">
@@ -714,8 +714,8 @@ export const DigitalPenCanvas: React.FC<DigitalPenCanvasProps> = ({
         {strokes.length === 0 && mode === 'scratchpad' && (
           <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none opacity-40 select-none">
             <Sparkles className="w-8 h-8 mb-2 text-gray-500 dark:text-gray-300" />
-            <p className="text-sm font-bold text-gray-700 dark:text-gray-300">Espaço de Rascunho para Cálculos e Anotações</p>
-            <p className="text-xs text-gray-500 dark:text-gray-400">Desenhe diretamente com a caneta da mesa digitalizadora ou mouse</p>
+            <p className="text-sm font-bold text-gray-700 dark:text-gray-300">Espaço para cálculos e anotações</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400">Desenhe com a caneta ou o mouse</p>
           </div>
         )}
       </div>

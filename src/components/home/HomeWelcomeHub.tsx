@@ -3,7 +3,7 @@
  * @description Painel de boas-vindas da Tela Inicial (Home) focado no estudante.
  * Exibe informações dinâmicas do perfil, painel de estatísticas (horas estudadas,
  * questões do dia, melhor matéria, média TRI) e área central de navegação com atalhos intuitivos,
- * incluindo a porta de entrada para 'Configurar Sessão de Questões'.
+ * incluindo a porta de entrada para 'Novo simulado'.
  */
 
 import React, { useMemo } from 'react';
@@ -102,7 +102,7 @@ export const HomeWelcomeHub: React.FC<HomeWelcomeHubProps> = ({
     }
 
     if (topRate < 0) {
-      return { name: 'Sem resoluções', detail: 'Resolva questões para calcular' };
+      return { name: 'Sem dados ainda', detail: 'Resolva questões para ver' };
     }
 
     const pct = Math.round(topRate * 100);
@@ -124,7 +124,7 @@ export const HomeWelcomeHub: React.FC<HomeWelcomeHubProps> = ({
       const approx = Math.round(450 + rate * 400);
       return `${approx}.0 pts`;
     }
-    return '500.0 pts (Base)';
+    return '500.0 pts';
   }, [profile.estimatedTri, attempts]);
 
   const dailyGoalPercent = Math.min(100, Math.round((questionsSolvedToday / profile.dailyGoalQuestions) * 100));
@@ -137,7 +137,7 @@ export const HomeWelcomeHub: React.FC<HomeWelcomeHubProps> = ({
           <div className="space-y-2">
             <div className="inline-flex items-center gap-2 bg-[#FFE600] text-black px-3 py-1 neo-border-sm text-xs font-black uppercase">
               <Sparkles className="w-4 h-4 text-black" />
-              <span>Painel do Vestibulando</span>
+              <span>Seu painel</span>
             </div>
 
             <h1 className="text-2xl md:text-4xl font-black text-black dark:text-white tracking-tight leading-none">
@@ -145,13 +145,13 @@ export const HomeWelcomeHub: React.FC<HomeWelcomeHubProps> = ({
             </h1>
 
             <div className="flex flex-wrap items-center gap-3 pt-1 text-xs font-bold text-gray-700 dark:text-gray-300">
-              <span className="flex items-center gap-1.5 bg-[#F8F5EE] dark:bg-[#202024] px-2.5 py-1 neo-border-sm">
+              <span className="flex items-center gap-1.5 bg-[#F8F5EE] dark:bg-[#202024] text-gray-800 dark:text-white px-2.5 py-1 neo-border-sm">
                 <Target className="w-3.5 h-3.5 text-[#3B82F6]" />
                 Foco: <strong className="text-black dark:text-white">{profile.targetExam}</strong>
               </span>
 
               {profile.targetCourse && (
-                <span className="flex items-center gap-1.5 bg-[#F8F5EE] dark:bg-[#202024] px-2.5 py-1 neo-border-sm">
+                <span className="flex items-center gap-1.5 bg-[#F8F5EE] dark:bg-[#202024] text-gray-800 dark:text-white px-2.5 py-1 neo-border-sm">
                   <Award className="w-3.5 h-3.5 text-[#00AA44]" />
                   Curso: <strong className="text-black dark:text-white">{profile.targetCourse}</strong>
                 </span>
@@ -170,14 +170,14 @@ export const HomeWelcomeHub: React.FC<HomeWelcomeHubProps> = ({
               type="button"
               onClick={onOpenSessionConfig}
               className="w-full sm:w-auto px-6 py-4 bg-[#FFE600] hover:bg-[#FFD600] text-black neo-btn flex items-center justify-center gap-3 font-black text-sm tracking-wide transition-all shadow-md"
-              title="Abrir o configurador dinâmico de simulado"
+              title="Montar um simulado"
             >
               <div className="p-1.5 bg-black text-[#FFE600] neo-border-sm">
                 <Sliders className="w-5 h-5" />
               </div>
               <div className="text-left">
-                <div className="text-xs font-mono uppercase tracking-wider text-gray-800">Iniciar Prática</div>
-                <div className="text-base font-black">Configurar Sessão de Questões</div>
+                <div className="text-xs font-mono uppercase tracking-wider text-gray-800">Praticar</div>
+                <div className="text-base font-black">Novo simulado</div>
               </div>
               <ArrowRight className="w-5 h-5 ml-1 stroke-[3]" />
             </button>
@@ -197,26 +197,28 @@ export const HomeWelcomeHub: React.FC<HomeWelcomeHubProps> = ({
               <Clock className="w-6 h-6 stroke-[2.5]" />
             </div>
             <div className="min-w-0">
-              <div className="text-[11px] font-mono font-bold uppercase text-gray-500 dark:text-gray-400">
+              <div className="text-xs font-mono font-bold uppercase text-gray-500 dark:text-gray-400">
                 Horas Estudadas
               </div>
               <div className="text-2xl font-black text-black dark:text-white truncate">
                 {totalStudyHoursFormatted}
               </div>
-              <div className="text-[10px] font-bold text-gray-600 dark:text-gray-400">
-                Tempo total de dedicação
+              <div className="text-xs font-bold text-gray-600 dark:text-gray-400">
+                Tempo total
               </div>
             </div>
           </div>
 
-          {/* Card 2: Questões Resolvidas no Dia */}
+          {/* Card 2: Questões Resolvidas hoje
+ */}
           <div className="bg-[#F8F5EE] dark:bg-[#202024] neo-border-sm p-4 flex items-center gap-3.5">
             <div className="p-3 bg-[#00E599] text-black neo-border-sm flex-shrink-0">
               <CheckCircle2 className="w-6 h-6 stroke-[2.5]" />
             </div>
             <div className="min-w-0 flex-1">
-              <div className="text-[11px] font-mono font-bold uppercase text-gray-500 dark:text-gray-400">
-                Resolvidas no Dia
+              <div className="text-xs font-mono font-bold uppercase text-gray-500 dark:text-gray-400">
+                Resolvidas hoje
+
               </div>
               <div className="text-2xl font-black text-black dark:text-white">
                 {questionsSolvedToday} <span className="text-xs font-bold text-gray-500">/ {profile.dailyGoalQuestions}</span>
@@ -230,19 +232,19 @@ export const HomeWelcomeHub: React.FC<HomeWelcomeHubProps> = ({
             </div>
           </div>
 
-          {/* Card 3: Matéria com Maior Taxa de Acerto */}
+          {/* Card 3: Matéria com Melhor matéria */}
           <div className="bg-[#F8F5EE] dark:bg-[#202024] neo-border-sm p-4 flex items-center gap-3.5">
             <div className="p-3 bg-[#FFE600] text-black neo-border-sm flex-shrink-0">
               <TrendingUp className="w-6 h-6 stroke-[2.5]" />
             </div>
             <div className="min-w-0">
-              <div className="text-[11px] font-mono font-bold uppercase text-gray-500 dark:text-gray-400">
-                Maior Taxa de Acerto
+              <div className="text-xs font-mono font-bold uppercase text-gray-500 dark:text-gray-400">
+                Melhor matéria
               </div>
               <div className="text-base font-black text-black dark:text-white truncate" title={bestDisciplineInfo.name}>
                 {bestDisciplineInfo.name}
               </div>
-              <div className="text-[10px] font-bold text-[#00AA44] dark:text-[#00E599] truncate">
+              <div className="text-xs font-bold text-[#00AA44] dark:text-[#00E599] truncate">
                 {bestDisciplineInfo.detail}
               </div>
             </div>
@@ -254,14 +256,14 @@ export const HomeWelcomeHub: React.FC<HomeWelcomeHubProps> = ({
               <Award className="w-6 h-6 stroke-[2.5]" />
             </div>
             <div className="min-w-0">
-              <div className="text-[11px] font-mono font-bold uppercase text-gray-500 dark:text-gray-400">
-                Média TRI Estimada
+              <div className="text-xs font-mono font-bold uppercase text-gray-500 dark:text-gray-400">
+                Nota TRI estimada
               </div>
               <div className="text-2xl font-black text-black dark:text-white">
                 {triAverageFormatted}
               </div>
-              <div className="text-[10px] font-bold text-gray-600 dark:text-gray-400">
-                Modelo 3PL Bayesiano
+              <div className="text-xs font-bold text-gray-600 dark:text-gray-400">
+                Estimativa ENEM
               </div>
             </div>
           </div>
@@ -273,17 +275,17 @@ export const HomeWelcomeHub: React.FC<HomeWelcomeHubProps> = ({
         <div className="flex items-center justify-between px-1">
           <div className="flex items-center gap-2">
             <Zap className="w-4 h-4 text-[#FF5A36]" />
-            <h2 className="text-sm font-black uppercase tracking-wider text-black dark:text-white">
-              ÁREA CENTRAL DE NAVEGAÇÃO • ACESSO RÁPIDO
+            <h2 className="text-base font-black uppercase tracking-wider text-black dark:text-white">
+              Acesso rápido
             </h2>
           </div>
           <span className="text-xs font-mono font-bold text-gray-500 dark:text-gray-400">
-            {questions.length} questões no sistema
+            {questions.length} questões
           </span>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {/* Atalho 1: Configurar Sessão de Questões */}
+          {/* Atalho 1: Novo simulado */}
           <div
             onClick={onOpenSessionConfig}
             className="p-5 bg-white dark:bg-[#18181B] neo-border neo-shadow hover:translate-x-1 hover:-translate-y-1 transition-all cursor-pointer group flex flex-col justify-between border-l-8 border-l-[#FFE600]"
@@ -297,20 +299,21 @@ export const HomeWelcomeHub: React.FC<HomeWelcomeHubProps> = ({
                   Simulado
                 </span>
               </div>
-              <h3 className="text-base font-black text-black dark:text-white group-hover:text-[#FF5A36] transition-colors">
-                Configurar Sessão de Questões
+              <h3 className="text-lg font-black text-black dark:text-white group-hover:text-[#FF5A36] transition-colors">
+                Novo simulado
               </h3>
-              <p className="text-xs text-gray-600 dark:text-gray-400 mt-1 leading-relaxed">
-                Ajuste a quantidade com o scroll do mouse, selecione vestibulares e áreas para começar.
+              <p className="text-sm text-gray-600 dark:text-gray-400 mt-1 leading-relaxed">
+                Escolha a quantidade de questões, o vestibular e a área.
               </p>
             </div>
-            <div className="mt-4 pt-3 border-t border-gray-100 dark:border-gray-800 flex items-center text-xs font-black text-black dark:text-[#FFE600] gap-1">
-              <span>Personalizar Simulado</span>
+            <div className="mt-4 pt-3 border-t border-gray-100 dark:border-gray-800 flex items-center text-sm font-black text-black dark:text-[#FFE600] gap-1">
+              <span>Montar simulado</span>
               <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
             </div>
           </div>
 
-          {/* Atalho 2: Caderno de Questões */}
+          {/* Atalho 2: Questões
+ */}
           <div
             onClick={() => onNavigateTab('questions')}
             className="p-5 bg-white dark:bg-[#18181B] neo-border neo-shadow hover:translate-x-1 hover:-translate-y-1 transition-all cursor-pointer group flex flex-col justify-between border-l-8 border-l-[#00F0FF]"
@@ -324,20 +327,21 @@ export const HomeWelcomeHub: React.FC<HomeWelcomeHubProps> = ({
                   {questions.length} itens
                 </span>
               </div>
-              <h3 className="text-base font-black text-black dark:text-white group-hover:text-[#00F0FF] transition-colors">
-                Caderno de Questões
+              <h3 className="text-lg font-black text-black dark:text-white group-hover:text-[#00F0FF] transition-colors">
+                Questões
+
               </h3>
-              <p className="text-xs text-gray-600 dark:text-gray-400 mt-1 leading-relaxed">
-                Pratique diretamente com o banco completo, cronômetro oficial e resolução comentada.
+              <p className="text-sm text-gray-600 dark:text-gray-400 mt-1 leading-relaxed">
+                Resolva questões do banco, com cronômetro e resolução.
               </p>
             </div>
-            <div className="mt-4 pt-3 border-t border-gray-100 dark:border-gray-800 flex items-center text-xs font-black text-black dark:text-[#00F0FF] gap-1">
-              <span>Abrir Caderno</span>
+            <div className="mt-4 pt-3 border-t border-gray-100 dark:border-gray-800 flex items-center text-sm font-black text-black dark:text-[#00F0FF] gap-1">
+              <span>Abrir questões</span>
               <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
             </div>
           </div>
 
-          {/* Atalho 3: Meus Rascunhos Salvos */}
+          {/* Atalho 3: Meus rascunhos */}
           <div
             onClick={() => onNavigateTab('drafts')}
             className="p-5 bg-white dark:bg-[#18181B] neo-border neo-shadow hover:translate-x-1 hover:-translate-y-1 transition-all cursor-pointer group flex flex-col justify-between border-l-8 border-l-[#FF5A36]"
@@ -351,20 +355,20 @@ export const HomeWelcomeHub: React.FC<HomeWelcomeHubProps> = ({
                   {draftsCount} salvos
                 </span>
               </div>
-              <h3 className="text-base font-black text-black dark:text-white group-hover:text-[#FF5A36] transition-colors">
-                Meus Rascunhos Salvos
+              <h3 className="text-lg font-black text-black dark:text-white group-hover:text-[#FF5A36] transition-colors">
+                Meus rascunhos
               </h3>
-              <p className="text-xs text-gray-600 dark:text-gray-400 mt-1 leading-relaxed">
-                Consulte todos os traços, contas e anotações feitas na mesa digitalizadora com filtros por matéria.
+              <p className="text-sm text-gray-600 dark:text-gray-400 mt-1 leading-relaxed">
+                Veja os cálculos e anotações que você fez nas questões.
               </p>
             </div>
-            <div className="mt-4 pt-3 border-t border-gray-100 dark:border-gray-800 flex items-center text-xs font-black text-[#FF5A36] gap-1">
-              <span>Ver Rascunhos</span>
+            <div className="mt-4 pt-3 border-t border-gray-100 dark:border-gray-800 flex items-center text-sm font-black text-[#FF5A36] gap-1">
+              <span>Ver rascunhos</span>
               <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
             </div>
           </div>
 
-          {/* Atalho 4: Repetição Espaçada (SRS) */}
+          {/* Atalho 4: Revisão espaçada */}
           <div
             onClick={() => onNavigateTab('srs')}
             className="p-5 bg-white dark:bg-[#18181B] neo-border neo-shadow hover:translate-x-1 hover:-translate-y-1 transition-all cursor-pointer group flex flex-col justify-between border-l-8 border-l-[#00E599]"
@@ -384,15 +388,15 @@ export const HomeWelcomeHub: React.FC<HomeWelcomeHubProps> = ({
                   </span>
                 )}
               </div>
-              <h3 className="text-base font-black text-black dark:text-white group-hover:text-[#00E599] transition-colors">
-                Repetição Espaçada (SRS)
+              <h3 className="text-lg font-black text-black dark:text-white group-hover:text-[#00E599] transition-colors">
+                Revisão espaçada
               </h3>
-              <p className="text-xs text-gray-600 dark:text-gray-400 mt-1 leading-relaxed">
-                Revise cartões baseados no algoritmo SM-2 para retenção de longo prazo dos seus erros.
+              <p className="text-sm text-gray-600 dark:text-gray-400 mt-1 leading-relaxed">
+                Revise as questões na hora certa para não esquecer.
               </p>
             </div>
-            <div className="mt-4 pt-3 border-t border-gray-100 dark:border-gray-800 flex items-center text-xs font-black text-[#00AA44] dark:text-[#00E599] gap-1">
-              <span>Praticar Revisão</span>
+            <div className="mt-4 pt-3 border-t border-gray-100 dark:border-gray-800 flex items-center text-sm font-black text-[#00AA44] dark:text-[#00E599] gap-1">
+              <span>Revisar</span>
               <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
             </div>
           </div>
@@ -408,18 +412,19 @@ export const HomeWelcomeHub: React.FC<HomeWelcomeHubProps> = ({
                   <BarChart3 className="w-5 h-5" />
                 </div>
                 <span className="text-[10px] font-mono uppercase px-2 py-0.5 bg-gray-100 dark:bg-gray-800 text-black dark:text-white font-bold">
-                  TRI & Acordes
+                  TRI e acertos
                 </span>
               </div>
-              <h3 className="text-base font-black text-black dark:text-white group-hover:text-[#FF3399] transition-colors">
-                DASHBOARD
+              <h3 className="text-lg font-black text-black dark:text-white group-hover:text-[#FF3399] transition-colors">
+                Desempenho
+
               </h3>
-              <p className="text-xs text-gray-600 dark:text-gray-400 mt-1 leading-relaxed">
-                Análise gráfica de evolução temporal, coerência pedagógica e acertos por conteúdo específico.
+              <p className="text-sm text-gray-600 dark:text-gray-400 mt-1 leading-relaxed">
+                Veja sua evolução e seus acertos por conteúdo.
               </p>
             </div>
-            <div className="mt-4 pt-3 border-t border-gray-100 dark:border-gray-800 flex items-center text-xs font-black text-[#FF3399] gap-1">
-              <span>Abrir Métricas</span>
+            <div className="mt-4 pt-3 border-t border-gray-100 dark:border-gray-800 flex items-center text-sm font-black text-[#FF3399] gap-1">
+              <span>Ver desempenho</span>
               <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
             </div>
           </div>
@@ -435,18 +440,18 @@ export const HomeWelcomeHub: React.FC<HomeWelcomeHubProps> = ({
                   <Database className="w-5 h-5" />
                 </div>
                 <span className="text-[10px] font-mono uppercase px-2 py-0.5 bg-gray-100 dark:bg-gray-800 text-black dark:text-white font-bold">
-                  API & SQLite
+                  Dados
                 </span>
               </div>
-              <h3 className="text-base font-black text-black dark:text-white group-hover:text-purple-500 transition-colors">
-                Banco de Dados & Ingestão
+              <h3 className="text-lg font-black text-black dark:text-white group-hover:text-purple-500 transition-colors">
+                Banco de questões
               </h3>
-              <p className="text-xs text-gray-600 dark:text-gray-400 mt-1 leading-relaxed">
-                Importe questões reais do enem.dev, exclua tópicos por filtro e exporte scripts SQLite offline.
+              <p className="text-sm text-gray-600 dark:text-gray-400 mt-1 leading-relaxed">
+                Importe questões do ENEM, remova conteúdos e faça backup.
               </p>
             </div>
-            <div className="mt-4 pt-3 border-t border-gray-100 dark:border-gray-800 flex items-center text-xs font-black text-purple-600 dark:text-purple-400 gap-1">
-              <span>Gerenciar Banco</span>
+            <div className="mt-4 pt-3 border-t border-gray-100 dark:border-gray-800 flex items-center text-sm font-black text-purple-600 dark:text-purple-400 gap-1">
+              <span>Abrir banco</span>
               <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
             </div>
           </div>
@@ -462,17 +467,17 @@ export const HomeWelcomeHub: React.FC<HomeWelcomeHubProps> = ({
                   <User className="w-5 h-5" />
                 </div>
                 <div>
-                  <h3 className="text-base font-black text-black dark:text-white group-hover:text-emerald-600 transition-colors">
-                    Perfil & Metas de Aprovação
+                  <h3 className="text-lg font-black text-black dark:text-white group-hover:text-emerald-600 transition-colors">
+                    Perfil e metas
                   </h3>
-                  <p className="text-xs text-gray-600 dark:text-gray-400 mt-0.5 leading-relaxed">
-                    Personalize seu apelido de estudos, vestibular alvo, carreira desejada e meta diária de questões.
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mt-0.5 leading-relaxed">
+                    Mude seu nome, vestibular, curso e meta diária.
                   </p>
                 </div>
               </div>
 
-              <div className="flex items-center text-xs font-black text-emerald-700 dark:text-emerald-400 gap-1 flex-shrink-0">
-                <span>Editar Perfil & Metas</span>
+              <div className="flex items-center text-sm font-black text-emerald-700 dark:text-emerald-400 gap-1 flex-shrink-0">
+                <span>Editar perfil</span>
                 <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
               </div>
             </div>

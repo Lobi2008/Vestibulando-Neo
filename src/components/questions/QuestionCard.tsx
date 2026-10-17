@@ -50,6 +50,7 @@ interface QuestionCardProps {
   currentIndex: number;
   totalCount: number;
   isDarkMode?: boolean;
+  onRascunhoActiveChange?: (active: boolean) => void;
 }
 
 export const QuestionCard: React.FC<QuestionCardProps> = ({
@@ -66,6 +67,7 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({
   currentIndex,
   totalCount,
   isDarkMode,
+  onRascunhoActiveChange,
 }) => {
   const [selectedOption, setSelectedOption] = useState<'A' | 'B' | 'C' | 'D' | 'E' | null>(
     lastAttempt?.selectedAlternative || null
@@ -134,6 +136,16 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({
       if (holdTimerRef.current) clearTimeout(holdTimerRef.current);
     };
   }, [question.id, lastAttempt, srsData]);
+
+  useEffect(() => {
+    onRascunhoActiveChange?.(showSide || showBottom || showOverlay);
+  }, [showSide, showBottom, showOverlay, onRascunhoActiveChange]);
+
+  useEffect(() => {
+    return () => {
+      onRascunhoActiveChange?.(false);
+    };
+  }, [onRascunhoActiveChange]);
 
   // Formata o enunciado da questão separando o contexto e o comando em negrito
   const { contextText, questionPrompt } = useMemo(() => {
@@ -310,7 +322,7 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({
                 ? 'bg-[#FFE600] text-black' 
                 : 'bg-white text-black hover:bg-gray-100 dark:bg-[#27272A] dark:text-white dark:hover:bg-gray-700'
             }`}
-            title="Escolha e ative os modos de rascunho desejados (Lateral, Abaixo, Sobre o Texto)"
+            title="Escolher onde o rascunho aparece"
           >
             <Edit3 className="w-3.5 h-3.5" />
             <span>
@@ -323,12 +335,11 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({
 
           {isRascunhoMenuOpen && (
             <div 
-              className="absolute right-0 top-full mt-2 z-40 bg-white dark:bg-[#1F1F23] neo-border neo-shadow-lg p-2.5 min-w-[240px] space-y-1.5"
+              className="absolute right-0 top-full mt-2 z-40 bg-white dark:bg-[#1F1F23] neo-border neo-shadow-lg p-2.5 min-w-[190px] space-y-1.5"
               onMouseLeave={() => setIsRascunhoMenuOpen(false)}
             >
               <div className="text-[10px] font-mono uppercase font-black text-gray-500 dark:text-gray-400 pb-1 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
-                <span>Modos de Visualização</span>
-                <span className="text-[9px] text-[#00AA44] font-bold">Multi-seleção</span>
+                <span>Posição</span>
               </div>
               
               <button
@@ -345,9 +356,9 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({
               >
                 <span className="flex items-center gap-1.5">
                   <Columns className="w-3.5 h-3.5" />
-                  Painel Lateral
+                  Ao lado
                 </span>
-                <span className="font-mono text-xs font-black">{showSide ? '✓ ATIVO' : 'OFF'}</span>
+                <span className="font-mono text-xs font-black">{showSide ? '✓ Ativo' : 'OFF'}</span>
               </button>
 
               <button
@@ -366,7 +377,7 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({
                   <Layers className="w-3.5 h-3.5" />
                   Abaixo
                 </span>
-                <span className="font-mono text-xs font-black">{showBottom ? '✓ ATIVO' : 'OFF'}</span>
+                <span className="font-mono text-xs font-black">{showBottom ? '✓ Ativo' : 'OFF'}</span>
               </button>
 
               <button
@@ -383,9 +394,9 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({
               >
                 <span className="flex items-center gap-1.5">
                   <Sparkles className="w-3.5 h-3.5" />
-                  Sobre o Texto (Riscar)
+                  Sobre o texto
                 </span>
-                <span className="font-mono text-xs font-black">{showOverlay ? '✓ ATIVO' : 'OFF'}</span>
+                <span className="font-mono text-xs font-black">{showOverlay ? '✓ Ativo' : 'OFF'}</span>
               </button>
 
               {activeRascunhoCount > 0 && (
@@ -399,7 +410,7 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({
                   }}
                   className="w-full text-center text-[10px] font-black text-red-500 hover:text-red-700 pt-1.5 border-t border-gray-200 dark:border-gray-700"
                 >
-                  Fechar Todos os Rascunhos
+                  Fechar todos
                 </button>
               )}
             </div>
@@ -443,7 +454,7 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({
                 {question.discipline}
               </span>
 
-              <span className="px-2 py-0.5 text-xs font-bold bg-[#E8F0FE] dark:bg-blue-950 neo-border-sm text-blue-900 dark:text-blue-200">
+              <span className="px-2 py-0.5 text-xs font-bold bg-[#E8F0FE] dark:bg-blue-950 neo-border-sm text-blue-900 dark:text-white">
                 📌 {question.topic}
               </span>
 
@@ -468,14 +479,14 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({
                 type="button"
                 onClick={handleCopyQuestion}
                 className="flex items-center gap-1.5 text-[11px] font-black bg-white dark:bg-[#27272A] px-2.5 py-1 neo-border-sm text-black dark:text-white hover:bg-[#FFE600] dark:hover:bg-[#FFE600] dark:hover:text-black"
-                title="Copiar enunciado e alternativas já formatados"
+                title="Copiar questão e alternativas"
               >
                 {copiedKind === 'question' ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
                 <span>
                   {copiedKind === 'question'
                     ? 'Copiado!'
                     : copiedKind === 'error'
-                    ? 'Não foi possível copiar'
+                    ? 'Erro ao copiar'
                     : 'Copiar questão'}
                 </span>
               </button>
@@ -514,11 +525,11 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({
 
           {/* Lista de Alternativas (A-E) com Eliminação por Clique Longo (1.5s) */}
           <div className="space-y-3 mb-6">
-            <div className="flex items-center justify-between text-[11px] font-mono text-gray-500 dark:text-gray-400 pb-1">
-              <span>Alternativas (clique para responder):</span>
+            <div className="flex items-center justify-between text-xs font-mono text-gray-500 dark:text-gray-400 pb-1">
+              <span>Alternativas</span>
               <span className="flex items-center gap-1 text-amber-700 dark:text-amber-400">
                 <Ban className="w-3 h-3" />
-                Segure 1.5s para riscar/eliminar
+                Segure 1,5 s para riscar
               </span>
             </div>
 
@@ -617,7 +628,7 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({
                 onClick={onNextQuestion}
                 disabled={currentIndex >= totalCount - 1}
                 className="px-3 py-2 text-xs font-bold neo-btn bg-white dark:bg-[#27272A] text-black dark:text-white disabled:opacity-30 flex items-center gap-1"
-                title="Próxima questão (Atalho: tecla S)"
+                title="Próxima questão (tecla S)"
               >
                 <span>Próxima</span>
                 <span className="text-[10px] font-mono text-gray-500 ml-0.5">[S]</span>
@@ -631,9 +642,9 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({
                   type="button"
                   onClick={handleSubmitAnswer}
                   disabled={!selectedOption}
-                  className="px-6 py-2.5 text-sm font-black neo-btn bg-[#FFE600] text-black disabled:opacity-40 flex items-center gap-2"
+                  className="px-8 py-2.5 text-sm font-black neo-btn bg-[#FFE600] text-black disabled:opacity-40 flex items-center gap-2"
                 >
-                  <span>Confirmar Resposta</span>
+                  <span>Confirmar</span>
                   <Sparkles className="w-4 h-4" />
                 </button>
               ) : (
@@ -643,7 +654,7 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({
                   className="px-4 py-2 text-xs font-black neo-btn bg-[#00F0FF] text-black flex items-center gap-1.5"
                 >
                   <Lightbulb className="w-4 h-4" />
-                  <span>{showExplanation ? 'Ocultar Resolução' : 'Ver Resolução'}</span>
+                  <span>{showExplanation ? 'Ocultar resolução' : 'Ver resolução'}</span>
                 </button>
               )}
             </div>
@@ -654,12 +665,12 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({
             <div className="mt-5 p-4 bg-[#F5F2EA] dark:bg-[#202024] neo-border">
               <div className="flex items-center gap-2 mb-2">
                 <Brain className="w-4 h-4 text-purple-700 dark:text-purple-400" />
-                <span className="text-xs font-black uppercase tracking-wider text-black dark:text-white">
-                  Repetição Espaçada: Como foi responder essa questão?
+                <span className="text-sm font-black uppercase tracking-wider text-black dark:text-white">
+                  Como foi essa questão?
                 </span>
               </div>
-              <p className="text-[11px] text-gray-700 dark:text-gray-300 mb-3">
-                Sua avaliação define o intervalo do algoritmo SM-2 até a próxima revisão mnemônica.
+              <p className="text-xs text-gray-700 dark:text-gray-300 mb-3">
+                Sua resposta define quando a questão volta para revisão.
               </p>
 
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
@@ -696,7 +707,7 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({
                       : 'bg-white dark:bg-[#27272A] text-gray-900 dark:text-gray-200 hover:bg-yellow-50'
                   }`}
                 >
-                  Bom / Médio (+3 dias)
+                  Bom (+3 dias)
                 </button>
 
                 <button
@@ -715,7 +726,7 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({
               {selectedSrsRating && (
                 <div className="mt-2 text-[10px] font-mono font-bold text-green-800 dark:text-green-400 flex items-center gap-1">
                   <CheckCircle2 className="w-3.5 h-3.5" />
-                  Agendado para o Deck de Repetição Espaçada!
+                  Revisão agendada!
                 </div>
               )}
             </div>
@@ -733,14 +744,14 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({
                   <>
                     <CheckCircle2 className="w-5 h-5 text-green-700 dark:text-green-400" />
                     <span className="font-black text-green-900 dark:text-green-300 text-sm">
-                      PARABÉNS! Resposta Correta (+35 XP)
+                      Resposta correta! (+35 XP)
                     </span>
                   </>
                 ) : (
                   <>
                     <XCircle className="w-5 h-5 text-red-700 dark:text-red-400" />
                     <span className="font-black text-red-900 dark:text-red-300 text-sm">
-                      RESPOSTA INCORRETA — Gabarito Oficial: Alternativa {question.correctAlternative}
+                      Resposta incorreta. Gabarito: alternativa {question.correctAlternative}
                     </span>
                   </>
                 )}
@@ -748,9 +759,9 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({
 
               <div className="mt-3 pt-3 border-t-2 border-black/20 dark:border-gray-700">
                 <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
-                  <h4 className="text-xs font-black uppercase tracking-wider text-gray-800 dark:text-gray-200 flex items-center gap-1.5">
+                  <h4 className="text-sm font-black uppercase tracking-wider text-gray-800 dark:text-gray-200 flex items-center gap-1.5">
                     <Lightbulb className="w-4 h-4 text-amber-500" />
-                    Resolução Comentada Passo a Passo:
+                    Resolução
                   </h4>
 
                   {!isEditingExplanation && (
@@ -760,7 +771,7 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({
                           type="button"
                           onClick={handleCopyResolution}
                           className="flex items-center gap-1 text-[10px] font-black bg-white dark:bg-[#27272A] px-2 py-1 neo-border-sm text-black dark:text-white hover:bg-[#FFE600] dark:hover:bg-[#FFE600] dark:hover:text-black"
-                          title="Copiar gabarito e resolução já formatados"
+                          title="Copiar gabarito e resolução"
                         >
                           {copiedKind === 'resolution' ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
                           <span>{copiedKind === 'resolution' ? 'Copiado!' : 'Copiar'}</span>
@@ -770,7 +781,7 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({
                         type="button"
                         onClick={handleStartEditExplanation}
                         className="flex items-center gap-1 text-[10px] font-black bg-white dark:bg-[#27272A] px-2 py-1 neo-border-sm text-black dark:text-white hover:bg-[#00F0FF] dark:hover:bg-[#00F0FF] dark:hover:text-black"
-                        title={hasExplanation ? 'Editar a resolução desta questão' : 'Adicionar uma resolução a esta questão'}
+                        title={hasExplanation ? 'Editar resolução' : 'Adicionar resolução'}
                       >
                         <Pencil className="w-3 h-3" />
                         <span>{hasExplanation ? 'Editar' : 'Adicionar resolução'}</span>
@@ -786,12 +797,12 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({
                       onChange={(e) => setExplanationDraft(e.target.value)}
                       autoFocus
                       rows={8}
-                      placeholder="Cole ou digite aqui a resolução da questão. Cada quebra de linha vira um parágrafo."
+                      placeholder="Digite ou cole a resolução. Cada linha vira um parágrafo."
                       className="selectable-text w-full text-sm font-sans leading-relaxed p-3 neo-border-sm bg-white text-black resize-y"
                     />
                     {explanationSaveFailed && (
                       <p className="text-[11px] font-bold text-red-700 dark:text-red-400">
-                        Não foi possível salvar a resolução (armazenamento local cheio ou indisponível).
+                        Não foi possível salvar a resolução.
                       </p>
                     )}
                     <div className="flex items-center justify-end gap-2">
@@ -822,7 +833,7 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({
                   />
                 ) : (
                   <p className="text-sm italic text-gray-700 dark:text-gray-300 bg-white dark:bg-[#1E1E22] p-3 neo-border-sm">
-                    Esta questão ainda não tem resolução. Use “Adicionar resolução” para colar a sua.
+                    Esta questão ainda não tem resolução.
                   </p>
                 )}
               </div>
@@ -853,7 +864,7 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({
           <div className="flex items-center justify-between bg-black text-white px-3 py-1.5 font-bold text-xs">
             <span className="flex items-center gap-1.5">
               <Edit3 className="w-4 h-4 text-[#FFE600]" />
-              Mesa Digitalizadora & Rascunho Inferior
+              Rascunho
             </span>
             <button
               type="button"

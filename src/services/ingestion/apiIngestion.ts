@@ -69,7 +69,7 @@ function buildStatement(rawQ: any): string {
   if (question && !base.includes(question)) parts.push(question);
 
   const full = parts.filter(Boolean).join('\n');
-  return full || 'Enunciado oficial ENEM obtido via enem.dev.';
+  return full || 'Enunciado indisponível.';
 }
 
 /** Limite máximo de itens por requisição aceito pela API enem.dev (parâmetro `limit` ≤ 50). */
@@ -152,16 +152,16 @@ export async function fetchFromEnemDev(
   const years = [2023, 2022, 2021, 2020, 2019, 2018, 2017, 2016, 2015, 2014, 2013, 2012, 2011, 2010, 2009];
 
   try {
-    onProgress?.(0, 'Conectando à API oficial enem.dev (https://docs.enem.dev/introduction)...');
+    onProgress?.(0, 'Conectando ao enem.dev...');
 
     for (let i = 0; i < years.length; i++) {
       const year = years[i];
-      onProgress?.(accumulated.length, `Buscando questões do ENEM ${year} via API enem.dev...`);
+      onProgress?.(accumulated.length, `Buscando ENEM ${year}...`);
 
       try {
         const baseCount = accumulated.length;
         const qList = await fetchAllEnemQuestionsOfYear(year, (loadedInYear) => {
-          onProgress?.(baseCount + loadedInYear, `Buscando questões do ENEM ${year} via API enem.dev (${loadedInYear} baixadas)...`);
+          onProgress?.(baseCount + loadedInYear, `Buscando ENEM ${year} (${loadedInYear} questões)...`);
         });
 
         if (qList.length > 0) {
@@ -191,16 +191,16 @@ export async function fetchFromEnemDev(
                 id: `enem-${year}-${rawQ.index || j + 1}`,
                 vestibular: 'ENEM',
                 year: Number(rawQ.year) || year,
-                edition: rawQ.title || `ENEM ${year} - Aplicação Regular`,
+                edition: rawQ.title || `Aplicação regular`,
                 area,
                 discipline: classification.discipline,
                 topic: rawQ.topic || classification.topic,
-                subtopic: rawQ.subtopic || 'Matriz de Referência ENEM',
+                subtopic: rawQ.subtopic || 'Matriz de Referência',
                 statement: buildStatement(rawQ),
                 contextSnippet: rawQ.contextSnippet || rawQ.legend || undefined,
                 alternatives,
                 correctAlternative: (rawQ.correctAlternative || 'A').toUpperCase() as any,
-                explanation: rawQ.explanation || rawQ.resolution || 'Gabarito oficial fornecido pela API enem.dev.',
+                explanation: rawQ.explanation || rawQ.resolution || 'Sem resolução disponível.',
                 triParams: {
                   a: rawQ.tri_a || Number((1.1 + (j % 9) * 0.1).toFixed(2)),
                   b: rawQ.tri_b || Number((((j % 15) - 7) * 0.25).toFixed(2)),
@@ -218,31 +218,31 @@ export async function fetchFromEnemDev(
     }
 
     if (accumulated.length >= 5) {
-      onProgress?.(accumulated.length, `Sucesso: ${accumulated.length} questões oficiais do ENEM obtidas da API!`);
+      onProgress?.(accumulated.length, `${accumulated.length} questões do ENEM importadas.`);
       return {
         questions: accumulated,
         log: {
           timestamp: Date.now(),
           source: 'https://api.enem.dev/v1/exams/{year}/questions',
           status: 'success',
-          message: `Sincronização bem-sucedida: ${accumulated.length} questões reais do ENEM carregadas da API oficial.`,
+          message: `${accumulated.length} questões do ENEM importadas.`,
           count: accumulated.length,
         },
       };
     }
 
-    throw new Error('API enem.dev retornou lista reduzida. Ativando cache oficial.');
+    throw new Error('O enem.dev retornou poucas questões.');
   } catch (error: any) {
     const enemSeed = INITIAL_QUESTION_SEED.filter((q) => q.vestibular === 'ENEM');
-    onProgress?.(enemSeed.length, `Modo Offline: ${enemSeed.length} questões oficiais do ENEM carregadas.`);
+    onProgress?.(enemSeed.length, `Sem conexão: ${enemSeed.length} questões do ENEM carregadas do app.`);
 
     return {
       questions: enemSeed,
       log: {
         timestamp: Date.now(),
-        source: 'enem.dev (Cache Offline)',
+        source: 'enem.dev (offline)',
         status: 'cached',
-        message: `Modo offline: ${enemSeed.length} questões oficiais do ENEM carregadas com sucesso.`,
+        message: `Sem conexão: ${enemSeed.length} questões do ENEM carregadas do app.`,
         count: enemSeed.length,
       },
     };
@@ -259,7 +259,7 @@ export async function fetchFromBeatrizMilzRepo(
   const accumulated: Question[] = [];
 
   try {
-    onProgress?.(0, 'Iniciando loop de agregação: beatrizmilz e questoesConcursos...');
+    onProgress?.(0, 'Buscando questões nos repositórios...');
 
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 8000);
@@ -270,7 +270,7 @@ export async function fetchFromBeatrizMilzRepo(
     ];
 
     for (let i = 0; i < endpoints.length; i++) {
-      onProgress?.(accumulated.length, `Consultando repositório ${i + 1} de ${endpoints.length}...`);
+      onProgress?.(accumulated.length, `Repositório ${i + 1} de ${endpoints.length}...`);
       try {
         const resp = await fetch(endpoints[i], { signal: controller.signal });
         if (resp.ok) {
@@ -290,7 +290,7 @@ export async function fetchFromBeatrizMilzRepo(
                 edition: item.fase || (vest === 'UERJ' ? 'Exame de Qualificação' : 'Fase 1'),
                 area,
                 discipline,
-                topic: item.assunto || item.topic || 'Conteúdo Programático Oficial',
+                topic: item.assunto || item.topic || 'Conteúdo geral',
                 subtopic: item.topico,
                 statement: item.enunciado || item.pergunta || item.text,
                 alternatives: [
@@ -301,7 +301,7 @@ export async function fetchFromBeatrizMilzRepo(
                   ...(item.alternativa_e || item.options?.[4] ? [{ id: 'E' as const, text: item.alternativa_e || item.options?.[4] }] : []),
                 ],
                 correctAlternative: (item.gabarito || item.answer || 'A').toUpperCase() as any,
-                explanation: item.resolucao || item.explanation || 'Resolução comentada do repositório aberto.',
+                explanation: item.resolucao || item.explanation || 'Sem resolução disponível.',
                 difficultyLevel: 'Médio',
                 sourceUrl: endpoints[i],
               });
@@ -316,20 +316,20 @@ export async function fetchFromBeatrizMilzRepo(
     clearTimeout(timeoutId);
 
     if (accumulated.length >= 10) {
-      onProgress?.(accumulated.length, `Sucesso: ${accumulated.length} questões agregadas!`);
+      onProgress?.(accumulated.length, `${accumulated.length} questões importadas.`);
       return {
         questions: accumulated,
         log: {
           timestamp: Date.now(),
-          source: 'GitHub beatrizmilz & questoesConcursos',
+          source: 'GitHub (repositórios abertos)',
           status: 'success',
-          message: `Loop concluído: ${accumulated.length} questões de UERJ/Vestibulares/Concursos importadas.`,
+          message: `${accumulated.length} questões de UERJ, vestibulares e concursos importadas.`,
           count: accumulated.length,
         },
       };
     }
 
-    throw new Error('Repos externos em cache local. Ativando loop gerador enriquecido.');
+    throw new Error('Repositórios indisponíveis.');
   } catch (err: any) {
     // Loop gerador de fallback cobrindo UERJ, FUVEST, UNICAMP e CONCURSOS
     const otherSeeds = INITIAL_QUESTION_SEED.filter((q) => q.vestibular !== 'ENEM');
@@ -341,20 +341,20 @@ export async function fetchFromBeatrizMilzRepo(
           ...item,
           id: `${item.id}-lote${loop + 1}`,
           year: item.year - loop,
-          edition: `${item.edition || 'Exame Regular'} (${item.year - loop})`,
+          edition: `${item.edition || 'Exame regular'} (${item.year - loop})`,
         });
       }
     }
 
-    onProgress?.(expandedOthers.length, `Modo Offline: ${expandedOthers.length} questões UERJ/Concursos carregadas.`);
+    onProgress?.(expandedOthers.length, `Sem conexão: ${expandedOthers.length} questões carregadas do app.`);
 
     return {
       questions: expandedOthers,
       log: {
         timestamp: Date.now(),
-        source: 'beatrizmilz & questoesConcursos (Offline Cache)',
+        source: 'Repositórios (offline)',
         status: 'cached',
-        message: `Loop de expansão concluído: ${expandedOthers.length} questões de UERJ, FUVEST e Concursos ativas.`,
+        message: `Sem conexão: ${expandedOthers.length} questões carregadas do app.`,
         count: expandedOthers.length,
       },
     };

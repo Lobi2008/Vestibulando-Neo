@@ -52,23 +52,19 @@ export const HeaderStatsBar: React.FC<HeaderStatsBarProps> = ({
         {/* Lado Esquerdo: Marca do Aplicativo */}
         <div 
           onClick={() => onSelectTab('home')}
-          className="flex items-center gap-3 cursor-pointer select-none"
+          className="flex items-center gap-3.5 cursor-pointer select-none py-0.5"
         >
-          <div className="bg-[#FF5A36] text-white p-2.5 neo-border neo-shadow-sm rotate-[-2deg]">
-            <BookOpen className="w-6 h-6 stroke-[2.5]" />
+          <div className="bg-[#FF5A36] text-white p-3 neo-border neo-shadow-sm rotate-[-2deg]">
+            <BookOpen className="w-7 h-7 stroke-[2.5]" />
           </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <h1 className="text-xl md:text-2xl font-black tracking-tight text-[#111111] dark:text-[#FFFFFF]">
-                VESTIBULANDO<span className="bg-[#00F0FF] dark:text-black px-1 ml-1 neo-border-sm">NEO</span>
-              </h1>
-              <span className="text-[10px] font-extrabold uppercase px-1.5 py-0.5 bg-[#00E599] text-black neo-border-sm">
-                v2.5 Win11
-              </span>
-            </div>
-            <p className="text-xs font-bold text-gray-800 dark:text-gray-300">
-              Banco ENEM (TRI 3PL) • UERJ & Vestibulares Paulistas
-            </p>
+          <div className="flex items-center gap-2.5">
+            <h1 className="text-2xl md:text-3xl font-black tracking-tight text-[#111111] dark:text-[#FFFFFF] flex items-center gap-1.5">
+              VESTIBULANDO
+              <span className="bg-[#FF3366] text-white px-2 py-0.5 neo-border-sm text-xl md:text-2xl">NEO</span>
+            </h1>
+            <span className="text-[10px] font-extrabold uppercase px-1.5 py-0.5 bg-[#00E599] text-black neo-border-sm self-center">
+              v2.5
+            </span>
           </div>
         </div>
 
@@ -80,7 +76,7 @@ export const HeaderStatsBar: React.FC<HeaderStatsBarProps> = ({
               type="button"
               onClick={onToggleDarkMode}
               className="bg-white dark:bg-[#27272A] text-black dark:text-yellow-300 p-2 neo-border neo-shadow-sm hover:scale-105 transition-transform"
-              title={isDarkMode ? 'Mudar para Modo Claro' : 'Mudar para Modo Escuro'}
+              title={isDarkMode ? 'Modo claro' : 'Modo escuro'}
               aria-label="Alternar Modo Escuro"
             >
               {isDarkMode ? <Sun className="w-5 h-5 text-yellow-400 fill-yellow-400" /> : <Moon className="w-5 h-5" />}
@@ -90,7 +86,7 @@ export const HeaderStatsBar: React.FC<HeaderStatsBarProps> = ({
           {/* Ofensiva (Streak) de Dias Consecutivos */}
           <div 
             className="flex items-center gap-1.5 bg-[#FF5A36] text-white px-3 py-1.5 neo-border neo-shadow-sm font-black"
-            title={`${profile.currentStreak} dias seguidos praticando vestibulares! (Recorde: ${profile.longestStreak} dias)`}
+            title={`${profile.currentStreak} dias seguidos (recorde: ${profile.longestStreak})`}
           >
             <Flame className="w-5 h-5 fill-yellow-300 text-yellow-300 animate-bounce" />
             <div className="leading-tight">
@@ -129,39 +125,39 @@ export const HeaderStatsBar: React.FC<HeaderStatsBarProps> = ({
         <button
           type="button"
           onClick={() => onSelectTab('home')}
-          className={`px-3.5 py-1.5 text-xs font-extrabold neo-btn flex items-center gap-1.5 ${
+          className={`px-4 py-2 text-sm font-extrabold neo-btn flex items-center gap-1.5 ${
             activeTab === 'home'
               ? 'bg-[#111111] text-white dark:bg-[#00F0FF] dark:text-black'
               : 'bg-white text-black hover:bg-yellow-100 dark:bg-[#27272A] dark:text-white dark:hover:bg-gray-700'
           }`}
         >
-          <Play className="w-3.5 h-3.5 fill-current" />
+          <Play className="w-4 h-4 fill-current" />
           <span>Início</span>
         </button>
 
         <button
           type="button"
           onClick={() => onSelectTab('questions')}
-          className={`px-3.5 py-1.5 text-xs font-extrabold neo-btn flex items-center gap-1.5 ${
+          className={`px-4 py-2 text-sm font-extrabold neo-btn flex items-center gap-1.5 ${
             activeTab === 'questions'
               ? 'bg-[#111111] text-white dark:bg-[#00F0FF] dark:text-black'
               : 'bg-white text-black hover:bg-yellow-100 dark:bg-[#27272A] dark:text-white dark:hover:bg-gray-700'
           }`}
         >
-          <BookOpen className="w-3.5 h-3.5" />
-          <span>Caderno de Questões ({solvedCount}/{questionsCount})</span>
+          <BookOpen className="w-4 h-4" />
+          <span>Questões ({solvedCount}/{questionsCount})</span>
         </button>
 
         <button
           type="button"
           onClick={() => onSelectTab('drafts')}
-          className={`px-3.5 py-1.5 text-xs font-extrabold neo-btn flex items-center gap-1.5 ${
+          className={`px-4 py-2 text-sm font-extrabold neo-btn flex items-center gap-1.5 ${
             activeTab === 'drafts'
               ? 'bg-[#111111] text-white dark:bg-[#00F0FF] dark:text-black'
               : 'bg-white text-black hover:bg-yellow-100 dark:bg-[#27272A] dark:text-white dark:hover:bg-gray-700'
           }`}
         >
-          <Edit3 className="w-3.5 h-3.5 text-[#FF5A36]" />
+          <Edit3 className="w-4 h-4 text-[#FF5A36]" />
           <span>Meus Rascunhos</span>
           {draftsCount > 0 && (
             <span className="bg-[#FFE600] text-black px-1.5 py-0.2 rounded-full text-[10px] font-mono font-bold">
@@ -173,14 +169,14 @@ export const HeaderStatsBar: React.FC<HeaderStatsBarProps> = ({
         <button
           type="button"
           onClick={() => onSelectTab('srs')}
-          className={`px-3.5 py-1.5 text-xs font-extrabold neo-btn flex items-center gap-1.5 ${
+          className={`px-4 py-2 text-sm font-extrabold neo-btn flex items-center gap-1.5 ${
             activeTab === 'srs'
               ? 'bg-[#111111] text-white dark:bg-[#00F0FF] dark:text-black'
               : 'bg-white text-black hover:bg-yellow-100 dark:bg-[#27272A] dark:text-white dark:hover:bg-gray-700'
           }`}
         >
-          <RotateCcw className="w-3.5 h-3.5 text-[#00F0FF]" />
-          <span>Repetição Espaçada (SRS)</span>
+          <RotateCcw className="w-4 h-4 text-[#00F0FF]" />
+          <span>Revisão espaçada</span>
           {dueSrsCount > 0 && (
             <span className="bg-[#FF3366] text-white px-1.5 py-0.2 rounded-full text-[10px] font-mono">
               {dueSrsCount}
@@ -191,14 +187,14 @@ export const HeaderStatsBar: React.FC<HeaderStatsBarProps> = ({
         <button
           type="button"
           onClick={() => onSelectTab('dashboard')}
-          className={`px-3.5 py-1.5 text-xs font-extrabold neo-btn flex items-center gap-1.5 ${
+          className={`px-4 py-2 text-sm font-extrabold neo-btn flex items-center gap-1.5 ${
             activeTab === 'dashboard'
               ? 'bg-[#111111] text-white dark:bg-[#00F0FF] dark:text-black'
               : 'bg-white text-black hover:bg-yellow-100 dark:bg-[#27272A] dark:text-white dark:hover:bg-gray-700'
           }`}
         >
-          <BarChart3 className="w-3.5 h-3.5 text-[#00E599]" />
-          <span>DASHBOARD</span>
+          <BarChart3 className="w-4 h-4 text-[#00E599]" />
+          <span>Desempenho</span>
         </button>
       </nav>
     </header>

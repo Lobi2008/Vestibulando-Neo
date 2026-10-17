@@ -69,12 +69,12 @@ export const UserProfileTab: React.FC<UserProfileTabProps> = ({
       {/* Cabeçalho do Perfil */}
       <div className="bg-white dark:bg-[#18181B] neo-border neo-shadow p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-xl md:text-2xl font-black text-black dark:text-white flex items-center gap-2">
+          <h2 className="text-2xl md:text-3xl font-black text-black dark:text-white flex items-center gap-2">
             <User className="w-6 h-6 text-[#FF3366]" />
-            MEU PERFIL & METAS DE APROVAÇÃO
+            Meu perfil
           </h2>
-          <p className="text-xs font-bold text-gray-700 dark:text-gray-300 mt-1">
-            Informações personalizadas do vestibulando. Clique no lápis para alterar qualquer dado.
+          <p className="text-sm font-bold text-gray-700 dark:text-gray-300 mt-1">
+            Clique no lápis para editar.
           </p>
         </div>
 
@@ -92,15 +92,15 @@ export const UserProfileTab: React.FC<UserProfileTabProps> = ({
 
       {/* Cartão de Informações em Texto Plano com Edição Inline */}
       <div className="bg-white dark:bg-[#18181B] neo-border neo-shadow p-6 space-y-6">
-        <h3 className="text-sm font-black uppercase tracking-wider text-black dark:text-white border-b-2 border-black dark:border-gray-700 pb-2">
-          Dados do Estudante
+        <h3 className="text-base font-black uppercase tracking-wider text-black dark:text-white border-b-2 border-black dark:border-gray-700 pb-2">
+          Seus dados
         </h3>
 
         {/* 1. Nome ou Apelido */}
         <div className="p-4 bg-[#F8F5EE] dark:bg-[#202024] neo-border-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div className="space-y-1">
-            <span className="block text-[11px] font-black uppercase tracking-wider text-gray-500 dark:text-gray-400">
-              Nome ou Apelido de Estudos
+            <span className="block text-xs font-black uppercase tracking-wider text-gray-500 dark:text-gray-400">
+              Nome
             </span>
             {editingField === 'name' ? (
               <div className="flex items-center gap-2 pt-1">
@@ -119,7 +119,7 @@ export const UserProfileTab: React.FC<UserProfileTabProps> = ({
                   type="button"
                   onClick={() => saveField('name')}
                   className="p-1.5 bg-[#00E599] text-black neo-border-sm hover:scale-105"
-                  title="Confirmar alteração"
+                  title="Confirmar"
                 >
                   <Check className="w-4 h-4 stroke-[3]" />
                 </button>
@@ -156,8 +156,8 @@ export const UserProfileTab: React.FC<UserProfileTabProps> = ({
           {/* 2. Vestibular Alvo */}
           <div className="p-4 bg-[#F8F5EE] dark:bg-[#202024] neo-border-sm flex flex-col justify-between gap-3">
             <div className="space-y-1">
-              <span className="block text-[11px] font-black uppercase tracking-wider text-gray-500 dark:text-gray-400">
-                Vestibular Alvo Principal
+              <span className="block text-xs font-black uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                Vestibular
               </span>
               {editingField === 'targetExam' ? (
                 <div className="flex items-center gap-2 pt-1">
@@ -167,9 +167,9 @@ export const UserProfileTab: React.FC<UserProfileTabProps> = ({
                     className="px-2.5 py-1 text-xs font-black neo-border-sm bg-white dark:bg-[#27272A] text-black dark:text-white focus:outline-none"
                     autoFocus
                   >
-                    <option value="ENEM">ENEM (Exame Nacional do Ensino Médio)</option>
-                    <option value="UERJ">UERJ (Qualificação)</option>
-                    <option value="FUVEST">FUVEST (USP)</option>
+                    <option value="ENEM">ENEM</option>
+                    <option value="UERJ">UERJ</option>
+                    <option value="FUVEST">FUVEST</option>
                     <option value="UNICAMP">UNICAMP</option>
                     <option value="CONCURSOS">Concursos Públicos</option>
                   </select>
@@ -177,7 +177,7 @@ export const UserProfileTab: React.FC<UserProfileTabProps> = ({
                     type="button"
                     onClick={() => saveField('targetExam')}
                     className="p-1.5 bg-[#00E599] text-black neo-border-sm hover:scale-105"
-                    title="Confirmar alteração"
+                    title="Confirmar"
                   >
                     <Check className="w-4 h-4 stroke-[3]" />
                   </button>
@@ -196,7 +196,7 @@ export const UserProfileTab: React.FC<UserProfileTabProps> = ({
                     {profile.targetExam}
                   </span>
                   <span className="px-2 py-0.5 text-[10px] font-black uppercase bg-[#00F0FF] text-black neo-border-sm">
-                    Foco Principal
+                    Foco
                   </span>
                 </div>
               )}
@@ -208,7 +208,7 @@ export const UserProfileTab: React.FC<UserProfileTabProps> = ({
                   type="button"
                   onClick={() => startEditing('targetExam')}
                   className="p-2 neo-border-sm bg-white dark:bg-[#27272A] hover:bg-[#FFE600] dark:hover:bg-[#FFE600] dark:hover:text-black transition-colors"
-                  title="Editar vestibular alvo"
+                  title="Editar vestibular"
                 >
                   <Pencil className="w-4 h-4 text-black dark:text-gray-200 hover:text-black" />
                 </button>
@@ -219,8 +219,8 @@ export const UserProfileTab: React.FC<UserProfileTabProps> = ({
           {/* 3. Curso Alvo */}
           <div className="p-4 bg-[#F8F5EE] dark:bg-[#202024] neo-border-sm flex flex-col justify-between gap-3">
             <div className="space-y-1">
-              <span className="block text-[11px] font-black uppercase tracking-wider text-gray-500 dark:text-gray-400">
-                Curso Alvo / Carreira dos Sonhos
+              <span className="block text-xs font-black uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                Curso
               </span>
               {editingField === 'targetCourse' ? (
                 <div className="flex items-center gap-2 pt-1">
@@ -240,7 +240,7 @@ export const UserProfileTab: React.FC<UserProfileTabProps> = ({
                     type="button"
                     onClick={() => saveField('targetCourse')}
                     className="p-1.5 bg-[#00E599] text-black neo-border-sm hover:scale-105"
-                    title="Confirmar alteração"
+                    title="Confirmar"
                   >
                     <Check className="w-4 h-4 stroke-[3]" />
                   </button>
@@ -255,7 +255,7 @@ export const UserProfileTab: React.FC<UserProfileTabProps> = ({
                 </div>
               ) : (
                 <span className="text-base font-black text-black dark:text-white">
-                  {profile.targetCourse || 'Não especificado'}
+                  {profile.targetCourse || 'Não informado'}
                 </span>
               )}
             </div>
@@ -266,7 +266,7 @@ export const UserProfileTab: React.FC<UserProfileTabProps> = ({
                   type="button"
                   onClick={() => startEditing('targetCourse')}
                   className="p-2 neo-border-sm bg-white dark:bg-[#27272A] hover:bg-[#FFE600] dark:hover:bg-[#FFE600] dark:hover:text-black transition-colors"
-                  title="Editar curso alvo"
+                  title="Editar curso"
                 >
                   <Pencil className="w-4 h-4 text-black dark:text-gray-200 hover:text-black" />
                 </button>
@@ -275,11 +275,11 @@ export const UserProfileTab: React.FC<UserProfileTabProps> = ({
           </div>
         </div>
 
-        {/* 4. Meta Diária de Questões */}
+        {/* 4. Meta diária */}
         <div className="p-4 bg-[#F8F5EE] dark:bg-[#202024] neo-border-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div className="space-y-1 flex-1">
-            <span className="block text-[11px] font-black uppercase tracking-wider text-gray-500 dark:text-gray-400">
-              Meta Diária de Questões
+            <span className="block text-xs font-black uppercase tracking-wider text-gray-500 dark:text-gray-400">
+              Meta diária
             </span>
             {editingField === 'dailyGoal' ? (
               <div className="flex items-center gap-3 pt-1">
@@ -300,7 +300,7 @@ export const UserProfileTab: React.FC<UserProfileTabProps> = ({
                   type="button"
                   onClick={() => saveField('dailyGoal')}
                   className="p-1.5 bg-[#00E599] text-black neo-border-sm hover:scale-105"
-                  title="Confirmar alteração"
+                  title="Confirmar"
                 >
                   <Check className="w-4 h-4 stroke-[3]" />
                 </button>
@@ -340,29 +340,29 @@ export const UserProfileTab: React.FC<UserProfileTabProps> = ({
 
       {/* Estatísticas Gerais de Aprendizado */}
       <div className="bg-white dark:bg-[#18181B] neo-border neo-shadow p-6">
-        <h3 className="text-sm font-black uppercase tracking-wider text-black dark:text-white border-b-2 border-black dark:border-gray-700 pb-2 mb-4 flex items-center gap-2">
+        <h3 className="text-base font-black uppercase tracking-wider text-black dark:text-white border-b-2 border-black dark:border-gray-700 pb-2 mb-4 flex items-center gap-2">
           <TrendingUp className="w-4 h-4 text-[#00E599]" />
-          Progresso Histórico do Perfil
+          Seu progresso
         </h3>
 
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           <div className="p-3 bg-[#F8F5EE] dark:bg-[#202024] neo-border-sm text-center">
-            <div className="text-[10px] font-mono uppercase text-gray-500 dark:text-gray-400">XP Acumulado</div>
+            <div className="text-xs font-mono uppercase text-gray-500 dark:text-gray-400">XP total</div>
             <div className="text-lg font-black text-black dark:text-white">{profile.totalXp} XP</div>
           </div>
 
           <div className="p-3 bg-[#F8F5EE] dark:bg-[#202024] neo-border-sm text-center">
-            <div className="text-[10px] font-mono uppercase text-gray-500 dark:text-gray-400">Ofensiva Atual</div>
+            <div className="text-xs font-mono uppercase text-gray-500 dark:text-gray-400">Ofensiva</div>
             <div className="text-lg font-black text-[#FF5A36]">{profile.currentStreak} dias</div>
           </div>
 
           <div className="p-3 bg-[#F8F5EE] dark:bg-[#202024] neo-border-sm text-center">
-            <div className="text-[10px] font-mono uppercase text-gray-500 dark:text-gray-400">Recorde de Ofensiva</div>
+            <div className="text-xs font-mono uppercase text-gray-500 dark:text-gray-400">Recorde</div>
             <div className="text-lg font-black text-black dark:text-white">{profile.longestStreak} dias</div>
           </div>
 
           <div className="p-3 bg-[#F8F5EE] dark:bg-[#202024] neo-border-sm text-center">
-            <div className="text-[10px] font-mono uppercase text-gray-500 dark:text-gray-400">Média TRI Estimada</div>
+            <div className="text-xs font-mono uppercase text-gray-500 dark:text-gray-400">Nota TRI estimada</div>
             <div className="text-lg font-black text-[#00AA44] dark:text-[#00E599]">
               {profile.estimatedTri ? `${profile.estimatedTri.toFixed(1)} pts` : '—'}
             </div>

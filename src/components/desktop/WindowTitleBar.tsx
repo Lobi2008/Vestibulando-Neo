@@ -25,7 +25,7 @@ export const WindowTitleBar: React.FC<WindowTitleBarProps> = ({
             window.scrollTo({ top: 0, behavior: 'smooth' });
           }}
           className="p-1 px-2.5 hover:bg-[#333333] transition-colors text-gray-300 hover:text-white"
-          title="Minimizar janela"
+          title="Minimizar"
           aria-label="Minimizar"
         >
           <Minus className="w-3.5 h-3.5" />
@@ -36,7 +36,7 @@ export const WindowTitleBar: React.FC<WindowTitleBarProps> = ({
           type="button"
           onClick={onToggleFullscreen}
           className="p-1 px-2.5 hover:bg-[#333333] transition-colors text-gray-300 hover:text-white"
-          title={isFullscreen ? 'Restaurar janela' : 'Maximizar janela'}
+          title={isFullscreen ? 'Restaurar' : 'Maximizar'}
           aria-label="Maximizar"
         >
           {isFullscreen ? <Square className="w-3.5 h-3.5" /> : <Maximize className="w-3.5 h-3.5" />}
@@ -49,7 +49,7 @@ export const WindowTitleBar: React.FC<WindowTitleBarProps> = ({
             window.scrollTo({ top: 0, behavior: 'smooth' });
           }}
           className="p-1 px-2.5 hover:bg-[#FF3366] transition-colors text-gray-300 hover:text-white"
-          title="Fechar aplicação"
+          title="Fechar"
           aria-label="Fechar"
         >
           <X className="w-3.5 h-3.5" />

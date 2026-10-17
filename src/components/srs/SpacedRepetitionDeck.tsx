@@ -77,14 +77,13 @@ export const SpacedRepetitionDeck: React.FC<SpacedRepetitionDeckProps> = ({
         <div>
           <div className="inline-flex items-center gap-1.5 bg-black text-white px-2.5 py-1 text-xs font-black uppercase mb-2">
             <Brain className="w-4 h-4 text-[#00F0FF]" />
-            <span>Algoritmo SuperMemo SM-2 • Memória de Longo Prazo</span>
+            <span>Método SM-2</span>
           </div>
           <h2 className="text-2xl md:text-3xl font-black text-black tracking-tight">
-            DECK DE REPETIÇÃO ESPAÇADA (SRS)
+            Revisão espaçada
           </h2>
-          <p className="text-xs font-bold text-gray-900 mt-1 max-w-xl">
-            Cada vez que você resolve uma questão e indica sua facilidade (Erro, Difícil, Bom ou Fácil),
-            o algoritmo calcula o intervalo ideal para você retestar a memória antes de esquecer.
+          <p className="text-sm font-bold text-gray-900 mt-1 max-w-md">
+            Depois de resolver uma questão, você avalia como foi e o app agenda a próxima revisão.
           </p>
         </div>
 
@@ -96,7 +95,7 @@ export const SpacedRepetitionDeck: React.FC<SpacedRepetitionDeckProps> = ({
             className="px-6 py-3.5 bg-[#FFE600] text-black font-black text-sm neo-btn flex items-center gap-2 disabled:opacity-40"
           >
             <Play className="w-4 h-4 fill-black" />
-            <span>REVISAR HOJE ({dueItems.length})</span>
+            <span>Revisar hoje ({dueItems.length})</span>
           </button>
         </div>
       </div>
@@ -105,23 +104,23 @@ export const SpacedRepetitionDeck: React.FC<SpacedRepetitionDeckProps> = ({
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div className="bg-white neo-border neo-shadow p-4">
           <div className="text-xs font-black text-gray-600 uppercase flex items-center justify-between mb-1">
-            <span>Prontas para Revisão Hoje</span>
+            <span>Para revisar hoje</span>
             <AlertCircle className="w-4 h-4 text-[#FF3366]" />
           </div>
           <div className="text-3xl font-black text-black">{dueItems.length}</div>
-          <div className="text-[11px] text-gray-500 font-bold mt-1">
-            {dueItems.length > 0 ? 'Exigem revisão para consolidar a memória' : 'Tudo em dia para hoje!'}
+          <div className="text-xs text-gray-500 font-bold mt-1">
+            {dueItems.length > 0 ? 'Revise para fixar o conteúdo' : 'Tudo em dia!'}
           </div>
         </div>
 
         <div className="bg-white neo-border neo-shadow p-4">
           <div className="text-xs font-black text-gray-600 uppercase flex items-center justify-between mb-1">
-            <span>Total no Deck SRS</span>
+            <span>Total agendado</span>
             <Layers className="w-4 h-4 text-[#3B82F6]" />
           </div>
           <div className="text-3xl font-black text-black">{registeredList.length}</div>
-          <div className="text-[11px] text-gray-500 font-bold mt-1">
-            Questões classificadas com SM-2
+          <div className="text-xs text-gray-500 font-bold mt-1">
+            Questões na revisão
           </div>
         </div>
 
@@ -138,8 +137,8 @@ export const SpacedRepetitionDeck: React.FC<SpacedRepetitionDeckProps> = ({
                 )} dias`
               : '0 dias'}
           </div>
-          <div className="text-[11px] text-gray-500 font-bold mt-1">
-            Espaçamento mnemônico crescente
+          <div className="text-xs text-gray-500 font-bold mt-1">
+            Tempo médio entre revisões
           </div>
         </div>
       </div>
@@ -148,8 +147,8 @@ export const SpacedRepetitionDeck: React.FC<SpacedRepetitionDeckProps> = ({
       <div className="bg-white neo-border neo-shadow p-5">
         <div className="flex flex-wrap items-center justify-between gap-3 pb-3 mb-4 border-b-2 border-black">
           <div className="flex items-center gap-2">
-            <span className="text-sm font-black uppercase text-black">
-              Itens no Cronograma de Revisão
+            <span className="text-base font-black uppercase text-black">
+              Cronograma
             </span>
             <span className="text-xs font-mono font-bold bg-black text-white px-2 py-0.5">
               {displayedList.length} itens
@@ -160,20 +159,20 @@ export const SpacedRepetitionDeck: React.FC<SpacedRepetitionDeckProps> = ({
             <button
               type="button"
               onClick={() => setFilterType('DUE')}
-              className={`px-3 py-1 text-xs font-black neo-border-sm transition-all ${
+              className={`px-3.5 py-1.5 text-xs font-black neo-border-sm transition-all ${
                 filterType === 'DUE' ? 'bg-[#FFE600] text-black' : 'bg-gray-100 text-gray-700'
               }`}
             >
-              Prontas Hoje ({dueItems.length})
+              Hoje ({dueItems.length})
             </button>
             <button
               type="button"
               onClick={() => setFilterType('ALL')}
-              className={`px-3 py-1 text-xs font-black neo-border-sm transition-all ${
+              className={`px-3.5 py-1.5 text-xs font-black neo-border-sm transition-all ${
                 filterType === 'ALL' ? 'bg-black text-white' : 'bg-gray-100 text-gray-700'
               }`}
             >
-              Todos os Agendamentos ({registeredList.length})
+              Todas ({registeredList.length})
             </button>
           </div>
         </div>
@@ -183,12 +182,11 @@ export const SpacedRepetitionDeck: React.FC<SpacedRepetitionDeckProps> = ({
             <Brain className="w-10 h-10 text-gray-400 mx-auto" />
             <p className="text-sm font-bold text-gray-700">
               {filterType === 'DUE'
-                ? 'Nenhuma questão agendada para hoje! Excelente trabalho de retenção.'
-                : 'Você ainda não classificou nenhuma questão para a repetição espaçada.'}
+                ? 'Nenhuma revisão para hoje.'
+                : 'Você ainda não tem questões na revisão.'}
             </p>
-            <p className="text-xs text-gray-500 max-w-md mx-auto">
-              Ao resolver questões no Caderno, clique em "Erro", "Difícil", "Bom" ou "Fácil" no painel de
-              feedback para agendar a próxima repetição automaticamente.
+            <p className="text-sm text-gray-500 max-w-sm mx-auto">
+              Depois de responder uma questão, avalie como foi (Errei, Difícil, Bom ou Fácil) para agendar a revisão.
             </p>
           </div>
         ) : (
@@ -211,7 +209,7 @@ export const SpacedRepetitionDeck: React.FC<SpacedRepetitionDeckProps> = ({
                       <span className="bg-blue-100 text-blue-900 px-1.5 py-0.5">{q.topic}</span>
                       {item.isDue && (
                         <span className="bg-[#FF3366] text-white px-2 py-0.5 text-[10px] font-black uppercase">
-                          VENCE HOJE
+                          Hoje
                         </span>
                       )}
                     </div>
@@ -226,7 +224,7 @@ export const SpacedRepetitionDeck: React.FC<SpacedRepetitionDeckProps> = ({
                         Próxima: <strong>{item.nextReviewDate}</strong>
                       </div>
                       <div className="text-gray-500">
-                        Intervalo: {item.intervalDays}d • Repetições: {item.repetitions}
+                        Intervalo: {item.intervalDays}d • Revisões: {item.repetitions}
                       </div>
                     </div>
 

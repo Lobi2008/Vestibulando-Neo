@@ -31,9 +31,9 @@ interface StudySessionStarterProps {
 
 const ALL_VESTIBULARES: Array<{ id: ExamType | 'TODOS'; label: string; badge: string }> = [
   { id: 'TODOS', label: 'Todos os Vestibulares', badge: 'Geral' },
-  { id: 'ENEM', label: 'ENEM (TRI 3PL)', badge: 'TRI' },
-  { id: 'UERJ', label: 'UERJ (Qualificação)', badge: 'Conceito A' },
-  { id: 'FUVEST', label: 'FUVEST (USP)', badge: '1ª Fase' },
+  { id: 'ENEM', label: 'ENEM', badge: 'TRI' },
+  { id: 'UERJ', label: 'UERJ', badge: 'Conceito A' },
+  { id: 'FUVEST', label: 'FUVEST', badge: '1ª Fase' },
   { id: 'UNICAMP', label: 'UNICAMP', badge: '1ª Fase' },
   { id: 'CONCURSOS', label: 'Concursos Públicos', badge: 'Geral' },
 ];
@@ -132,11 +132,11 @@ export const StudySessionStarter: React.FC<StudySessionStarterProps> = ({
           className="px-3.5 py-1.5 text-xs font-black neo-btn bg-white dark:bg-[#18181B] text-black dark:text-white flex items-center gap-2 hover:bg-gray-100"
         >
           <ArrowLeft className="w-4 h-4" />
-          <span>Voltar para a Tela Inicial</span>
+          <span>Voltar</span>
         </button>
 
         <span className="text-xs font-mono font-bold text-gray-600 dark:text-gray-400">
-          Simulado Personalizado
+          Simulado
         </span>
       </div>
 
@@ -147,30 +147,32 @@ export const StudySessionStarter: React.FC<StudySessionStarterProps> = ({
             <Sliders className="w-5 h-5" />
           </div>
           <div>
-            <h2 className="text-xl md:text-2xl font-black text-black dark:text-white uppercase tracking-tight">
-              CONFIGURAR SESSÃO DE QUESTÕES
+            <h2 className="text-2xl md:text-3xl font-black text-black dark:text-white uppercase tracking-tight">
+              Novo simulado
             </h2>
-            <p className="text-xs font-bold text-gray-700 dark:text-gray-300">
-              Personalize o volume de questões e recorte temático para iniciar seu simulado focado.
+            <p className="text-sm font-bold text-gray-700 dark:text-gray-300">
+              Escolha quantas questões e de qual assunto.
             </p>
           </div>
         </div>
       </div>
 
-      {/* SEÇÃO 1: VOLUME DE QUESTÕES NA SESSÃO (Sistema Dinâmico com Scroll e Clique) */}
+      {/* SEÇÃO 1: Quantidade de questões
+ (Sistema Dinâmico com Scroll e Clique) */}
       <div className="bg-white dark:bg-[#18181B] neo-border neo-shadow p-6 space-y-4">
         <div className="flex items-center justify-between border-b-2 border-black dark:border-gray-700 pb-2">
           <div className="flex items-center gap-2">
             <span className="w-6 h-6 flex items-center justify-center bg-black text-white dark:bg-[#FFE600] dark:text-black font-black text-xs">
               1
             </span>
-            <h3 className="text-sm font-black uppercase tracking-wider text-black dark:text-white">
-              VOLUME DE QUESTÕES NA SESSÃO
+            <h3 className="text-base font-black uppercase tracking-wider text-black dark:text-white">
+              Quantidade de questões
+
             </h3>
           </div>
 
-          <span className="text-[11px] font-mono font-bold text-gray-500 dark:text-gray-400 hidden sm:inline">
-            Role o mouse ou clique no número para digitar
+          <span className="text-xs font-mono font-bold text-gray-500 dark:text-gray-400 hidden sm:inline">
+            Role o mouse ou clique no número
           </span>
         </div>
 
@@ -180,7 +182,7 @@ export const StudySessionStarter: React.FC<StudySessionStarterProps> = ({
           <div
             onWheel={handleWheelVolume}
             className="flex items-center gap-3 bg-[#F8F5EE] dark:bg-[#202024] p-3 neo-border select-none"
-            title="Use a rodinha do mouse sobre esta área para aumentar ou diminuir de 1 em 1"
+            title="Role o mouse para mudar a quantidade"
           >
             {/* Botão Diminuir */}
             <button
@@ -188,7 +190,7 @@ export const StudySessionStarter: React.FC<StudySessionStarterProps> = ({
               onClick={() => setQuestionCount((prev) => Math.max(1, prev - 1))}
               disabled={questionCount <= 1}
               className="w-10 h-10 bg-white dark:bg-[#27272A] neo-border-sm flex items-center justify-center font-black text-black dark:text-white hover:bg-gray-200 dark:hover:bg-gray-700 disabled:opacity-30"
-              title="Diminuir (1 questão)"
+              title="Diminuir"
             >
               <Minus className="w-5 h-5 stroke-[3]" />
             </button>
@@ -197,7 +199,7 @@ export const StudySessionStarter: React.FC<StudySessionStarterProps> = ({
             <div
               onClick={() => setIsEditingCount(true)}
               className="w-32 h-16 bg-white dark:bg-[#18181B] neo-border-sm flex flex-col items-center justify-center cursor-pointer hover:border-[#FFE600] transition-colors relative"
-              title="Clique para digitar o número exato desejado"
+              title="Clique para digitar"
             >
               {isEditingCount ? (
                 <input
@@ -236,7 +238,7 @@ export const StudySessionStarter: React.FC<StudySessionStarterProps> = ({
               onClick={() => setQuestionCount((prev) => Math.min(prev + 1, maxAvailable))}
               disabled={questionCount >= maxAvailable}
               className="w-10 h-10 bg-white dark:bg-[#27272A] neo-border-sm flex items-center justify-center font-black text-black dark:text-white hover:bg-gray-200 dark:hover:bg-gray-700 disabled:opacity-30"
-              title="Aumentar (1 questão)"
+              title="Aumentar"
             >
               <Plus className="w-5 h-5 stroke-[3]" />
             </button>
@@ -246,13 +248,13 @@ export const StudySessionStarter: React.FC<StudySessionStarterProps> = ({
           <div className="space-y-1.5 text-xs text-gray-700 dark:text-gray-300 max-w-xs text-center sm:text-left">
             <div className="flex items-center gap-1.5 font-bold text-black dark:text-white">
               <MousePointer className="w-4 h-4 text-[#FF5A36]" />
-              <span>Controle Ultra-Rápido:</span>
+              <span>Dicas:</span>
             </div>
-            <p className="text-[11px] text-gray-600 dark:text-gray-400">
-              • <strong>Role o scroll do mouse</strong> para subir ou descer de 1 em 1.
+            <p className="text-xs text-gray-600 dark:text-gray-400">
+              • <strong>Role o mouse</strong> para mudar de 1 em 1.
             </p>
-            <p className="text-[11px] text-gray-600 dark:text-gray-400">
-              • <strong>Clique sobre o número</strong> para digitar qualquer valor (ex: 15, 30, 45, 90).
+            <p className="text-xs text-gray-600 dark:text-gray-400">
+              • <strong>Clique no número</strong> para digitar o valor.
             </p>
           </div>
         </div>
@@ -264,15 +266,16 @@ export const StudySessionStarter: React.FC<StudySessionStarterProps> = ({
           <span className="w-6 h-6 flex items-center justify-center bg-black text-white dark:bg-[#FFE600] dark:text-black font-black text-xs">
             2
           </span>
-          <h3 className="text-sm font-black uppercase tracking-wider text-black dark:text-white">
-            BANCA E CONTEÚDOS DA SESSÃO
+          <h3 className="text-base font-black uppercase tracking-wider text-black dark:text-white">
+            Assunto
           </h3>
         </div>
 
         {/* Escolha do Vestibular */}
         <div>
-          <label className="block text-xs font-black uppercase tracking-wider text-gray-700 dark:text-gray-300 mb-2">
-            Vestibular / Banca
+          <label className="block text-sm font-black uppercase tracking-wider text-gray-700 dark:text-gray-300 mb-2">
+            Vestibular
+
           </label>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
             {ALL_VESTIBULARES.map((vest) => {
@@ -291,7 +294,7 @@ export const StudySessionStarter: React.FC<StudySessionStarterProps> = ({
                       : 'bg-[#F8F5EE] dark:bg-[#202024] text-gray-800 dark:text-gray-200 hover:bg-yellow-50 dark:hover:bg-gray-700 font-bold'
                   }`}
                 >
-                  <span className="text-xs">{vest.label}</span>
+                  <span className="text-sm">{vest.label}</span>
                   <span className="text-[9px] font-mono uppercase text-gray-600 dark:text-gray-400 mt-1">
                     {vest.badge}
                   </span>
@@ -304,8 +307,9 @@ export const StudySessionStarter: React.FC<StudySessionStarterProps> = ({
         {/* Escolha da Área e Conteúdo Específico */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
           <div>
-            <label className="block text-xs font-black uppercase tracking-wider text-gray-700 dark:text-gray-300 mb-1">
-              Área de Conhecimento
+            <label className="block text-sm font-black uppercase tracking-wider text-gray-700 dark:text-gray-300 mb-1">
+              Área
+
             </label>
             <select
               value={selectedArea}
@@ -315,25 +319,25 @@ export const StudySessionStarter: React.FC<StudySessionStarterProps> = ({
               }}
               className="w-full p-2.5 text-xs font-extrabold neo-border-sm bg-[#F8F5EE] dark:bg-[#27272A] text-black dark:text-white focus:outline-none"
             >
-              <option value="TODAS">Todas as Áreas de Conhecimento</option>
+              <option value="TODAS">Todas as áreas</option>
               {ALL_AREAS.map((a) => (
                 <option key={a} value={a}>
-                  {a}
+                  {a.replace(', Códigos e suas Tecnologias', '').replace(' e suas Tecnologias', '')}
                 </option>
               ))}
             </select>
           </div>
 
           <div>
-            <label className="block text-xs font-black uppercase tracking-wider text-gray-700 dark:text-gray-300 mb-1">
-              Conteúdo Específico ({availableTopics.length})
+            <label className="block text-sm font-black uppercase tracking-wider text-gray-700 dark:text-gray-300 mb-1">
+              Conteúdo
             </label>
             <select
               value={selectedTopic}
               onChange={(e) => setSelectedTopic(e.target.value)}
               className="w-full p-2.5 text-xs font-extrabold neo-border-sm bg-[#F8F5EE] dark:bg-[#27272A] text-black dark:text-white focus:outline-none"
             >
-              <option value="TODOS">Todos os Conteúdos Específicos</option>
+              <option value="TODOS">Todos os conteúdos</option>
               {availableTopics.map((top) => (
                 <option key={top} value={top}>
                   {top}
@@ -347,16 +351,16 @@ export const StudySessionStarter: React.FC<StudySessionStarterProps> = ({
       {/* Resumo da Sessão e Ação de Início */}
       <div className="bg-[#FFE600] dark:bg-[#27272A] neo-border neo-shadow-lg p-5 flex flex-col sm:flex-row items-center justify-between gap-4">
         <div className="space-y-1 text-center sm:text-left">
-          <div className="flex items-center justify-center sm:justify-start gap-2 text-xs font-black text-black dark:text-white">
+          <div className="flex items-center justify-center sm:justify-start gap-2 text-sm font-black text-black dark:text-white">
             <Target className="w-4 h-4" />
-            <span>Sessão Pronta para Início</span>
+            <span>Tudo pronto</span>
           </div>
-          <p className="text-xs font-bold text-gray-800 dark:text-gray-300">
-            {questionCount} questões selecionadas • {matchingQuestions.length} questões disponíveis no banco
+          <p className="text-sm font-bold text-gray-800 dark:text-gray-300">
+            {questionCount} questões • {matchingQuestions.length} disponíveis
           </p>
           <div className="flex items-center justify-center sm:justify-start gap-1 text-[11px] font-mono text-gray-700 dark:text-gray-400">
             <Clock className="w-3.5 h-3.5" />
-            <span>Tempo estimado: ~{estimatedMinutes} min</span>
+            <span>Cerca de {estimatedMinutes} min</span>
           </div>
         </div>
 
@@ -366,7 +370,7 @@ export const StudySessionStarter: React.FC<StudySessionStarterProps> = ({
           className="w-full sm:w-auto px-8 py-3.5 text-sm font-black neo-btn bg-black text-white dark:bg-[#00F0FF] dark:text-black flex items-center justify-center gap-2 hover:scale-105"
         >
           <Play className="w-4 h-4 fill-current" />
-          <span>INICIAR SIMULADO AGORA</span>
+          <span>Iniciar simulado</span>
         </button>
       </div>
     </div>
