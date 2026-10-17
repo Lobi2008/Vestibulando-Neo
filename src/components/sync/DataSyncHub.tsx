@@ -5,7 +5,7 @@
  * exibe logs de conectividade e exporta os dados para arquivo SQLite offline no Windows 11.
  */
 
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { 
   Database, 
   RefreshCw, 
@@ -16,11 +16,20 @@ import {
   Terminal, 
   ExternalLink,
   Layers,
-  Sparkles
+  Sparkles,
+  Trash2,
+  AlertTriangle
 } from 'lucide-react';
-import type { Question } from '../../types/index.ts';
+import type { Question, ExamType, DisciplineType } from '../../types/index.ts';
 import { fetchFromEnemDev, fetchFromBeatrizMilzRepo, IngestionLog } from '../../services/ingestion/apiIngestion.ts';
-import { saveQuestions, generateSqliteExportScript, clearAndResetDatabase } from '../../services/storage/localDatabase.ts';
+import {
+  saveQuestions,
+  generateSqliteExportScript,
+  clearAndResetDatabase,
+  deleteQuestionsByFilter,
+  matchesDeletionCriteria,
+} from '../../services/storage/localDatabase.ts';
+import type { QuestionDeletionCriteria } from '../../services/storage/localDatabase.ts';
 import { INITIAL_QUESTION_SEED } from '../../services/ingestion/questionSeed.ts';
 
 interface DataSyncHubProps {
@@ -45,6 +54,93 @@ export const DataSyncHub: React.FC<DataSyncHubProps> = ({
   ]);
 
   const [progressMsg, setProgressMsg] = useState<string>('');
+
+  // Apagar questões: filtros (vestibular > matéria > conteúdo específico) e confirmação
+  const [deleteVestibular, setDeleteVestibular] = useState<ExamType | 'TODOS'>('TODOS');
+  const [deleteDiscipline, setDeleteDiscipline] = useState<DisciplineType | 'TODAS'>('TODAS');
+  const [deleteTopic, setDeleteTopic] = useState<string>('TODOS');
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState<boolean>(false);
+  const [deleteConfirmText, setDeleteConfirmText] = useState<string>('');
+
+  const deleteCriteria: QuestionDeletionCriteria = {
+    vestibular: deleteVestibular,
+    discipline: deleteDiscipline,
+    topic: deleteTopic,
+  };
+
+  const countBy = (list: string[]) => {
+    const map = new Map<string, number>();
+    list.forEach((item) => map.set(item, (map.get(item) || 0) + 1));
+    return Array.from(map.entries()).sort((a, b) => a[0].localeCompare(b[0], 'pt-BR'));
+  };
+
+  // Opções de cada filtro dependem do nível anterior (só aparece o que existe no banco)
+  const vestibularOptions = useMemo(() => countBy(questions.map((q) => q.vestibular)), [questions]);
+  const disciplineOptions = useMemo(
+    () =>
+      countBy(
+        questions
+          .filter((q) => matchesDeletionCriteria(q, { vestibular: deleteVestibular, discipline: 'TODAS', topic: 'TODOS' }))
+          .map((q) => q.discipline)
+      ),
+    [questions, deleteVestibular]
+  );
+  const topicOptions = useMemo(
+    () =>
+      countBy(
+        questions
+          .filter((q) =>
+            matchesDeletionCriteria(q, { vestibular: deleteVestibular, discipline: deleteDiscipline, topic: 'TODOS' })
+          )
+          .map((q) => q.topic)
+      ),
+    [questions, deleteVestibular, deleteDiscipline]
+  );
+
+  const deleteMatchCount = useMemo(
+    () => questions.filter((q) => matchesDeletionCriteria(q, { vestibular: deleteVestibular, discipline: deleteDiscipline, topic: deleteTopic })).length,
+    [questions, deleteVestibular, deleteDiscipline, deleteTopic]
+  );
+
+  const isDeletingEverything =
+    deleteVestibular === 'TODOS' && deleteDiscipline === 'TODAS' && deleteTopic === 'TODOS';
+
+  const closeDeleteModal = () => {
+    setIsDeleteModalOpen(false);
+    setDeleteConfirmText('');
+  };
+
+  useEffect(() => {
+    if (!isDeleteModalOpen) return;
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') closeDeleteModal();
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [isDeleteModalOpen]);
+
+  const handleConfirmDelete = () => {
+    if (deleteMatchCount === 0) return;
+    if (isDeletingEverything && deleteConfirmText.trim().toUpperCase() !== 'APAGAR') return;
+
+    const { remaining, removedCount } = deleteQuestionsByFilter(deleteCriteria);
+    onQuestionsUpdated(remaining);
+    setLogs((prev) => [
+      {
+        timestamp: Date.now(),
+        source: 'Exclusão de Questões',
+        status: removedCount > 0 ? 'success' : 'warning',
+        message: `${removedCount} questão(ões) apagada(s) [vestibular: ${deleteVestibular} | matéria: ${deleteDiscipline} | conteúdo: ${deleteTopic}]. Restam ${remaining.length} no banco.`,
+        count: removedCount,
+      },
+      ...prev,
+    ]);
+
+    setDeleteVestibular('TODOS');
+    setDeleteDiscipline('TODAS');
+    setDeleteTopic('TODOS');
+    closeDeleteModal();
+  };
 
   const handleSyncEnemDev = async () => {
     setIsLoadingEnem(true);
@@ -314,6 +410,153 @@ export const DataSyncHub: React.FC<DataSyncHubProps> = ({
           </button>
         </div>
       </div>
+
+      {/* Apagar questões do banco (com filtros e confirmação) */}
+      <div className="bg-[#FFF0F3] neo-border neo-shadow p-5">
+        <h3 className="text-sm font-black uppercase tracking-wider text-black pb-2 mb-4 border-b-2 border-black flex items-center gap-2">
+          <Trash2 className="w-4 h-4 text-[#FF3366]" />
+          <span>Apagar Questões do Banco de Dados</span>
+        </h3>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
+          <label className="text-xs font-black text-black space-y-1 block">
+            <span>Vestibular</span>
+            <select
+              value={deleteVestibular}
+              onChange={(e) => {
+                setDeleteVestibular(e.target.value as ExamType | 'TODOS');
+                setDeleteDiscipline('TODAS');
+                setDeleteTopic('TODOS');
+              }}
+              className="w-full bg-white neo-border-sm px-2 py-2 text-xs font-bold text-black"
+            >
+              <option value="TODOS">Todos</option>
+              {vestibularOptions.map(([name, count]) => (
+                <option key={name} value={name}>
+                  {name} ({count})
+                </option>
+              ))}
+            </select>
+          </label>
+
+          <label className="text-xs font-black text-black space-y-1 block">
+            <span>Matéria</span>
+            <select
+              value={deleteDiscipline}
+              onChange={(e) => {
+                setDeleteDiscipline(e.target.value as DisciplineType | 'TODAS');
+                setDeleteTopic('TODOS');
+              }}
+              className="w-full bg-white neo-border-sm px-2 py-2 text-xs font-bold text-black"
+            >
+              <option value="TODAS">Todas</option>
+              {disciplineOptions.map(([name, count]) => (
+                <option key={name} value={name}>
+                  {name} ({count})
+                </option>
+              ))}
+            </select>
+          </label>
+
+          <label className="text-xs font-black text-black space-y-1 block">
+            <span>Conteúdo específico</span>
+            <select
+              value={deleteTopic}
+              onChange={(e) => setDeleteTopic(e.target.value)}
+              className="w-full bg-white neo-border-sm px-2 py-2 text-xs font-bold text-black"
+            >
+              <option value="TODOS">Todos</option>
+              {topicOptions.map(([name, count]) => (
+                <option key={name} value={name}>
+                  {name} ({count})
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
+
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <span className="text-xs font-bold text-gray-800">
+            {deleteMatchCount} questão(ões) correspondem aos filtros selecionados.
+          </span>
+          <button
+            type="button"
+            disabled={deleteMatchCount === 0}
+            onClick={() => setIsDeleteModalOpen(true)}
+            className="px-4 py-2 text-xs font-black neo-btn bg-[#FF3366] text-white disabled:opacity-40 flex items-center gap-2"
+          >
+            <Trash2 className="w-4 h-4" />
+            <span>Apagar questões selecionadas</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Confirmação de exclusão */}
+      {isDeleteModalOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="delete-questions-title"
+          onClick={closeDeleteModal}
+        >
+          <div
+            className="w-full max-w-md bg-white neo-border-thick neo-shadow-xl p-5 space-y-4"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h4 id="delete-questions-title" className="text-base font-black text-black flex items-center gap-2">
+              <AlertTriangle className="w-5 h-5 text-[#FF3366]" />
+              Confirmar exclusão
+            </h4>
+
+            <p className="text-sm font-bold text-gray-900">
+              Você está prestes a apagar <span className="text-[#FF3366]">{deleteMatchCount}</span> questão(ões) do banco
+              de dados. Esta ação não pode ser desfeita.
+            </p>
+
+            <ul className="text-xs font-mono bg-[#F5F2EA] neo-border-sm p-3 space-y-1 text-black">
+              <li>Vestibular: <strong>{deleteVestibular === 'TODOS' ? 'Todos' : deleteVestibular}</strong></li>
+              <li>Matéria: <strong>{deleteDiscipline === 'TODAS' ? 'Todas' : deleteDiscipline}</strong></li>
+              <li>Conteúdo específico: <strong>{deleteTopic === 'TODOS' ? 'Todos' : deleteTopic}</strong></li>
+            </ul>
+
+            {isDeletingEverything && (
+              <label className="block text-xs font-black text-black space-y-1">
+                <span>
+                  Nenhum filtro selecionado: isso apaga TODAS as questões. Digite <strong>APAGAR</strong> para confirmar.
+                </span>
+                <input
+                  type="text"
+                  value={deleteConfirmText}
+                  onChange={(e) => setDeleteConfirmText(e.target.value)}
+                  autoFocus
+                  className="w-full bg-white neo-border-sm px-2 py-2 text-sm font-mono text-black"
+                  placeholder="APAGAR"
+                />
+              </label>
+            )}
+
+            <div className="flex items-center justify-end gap-3 pt-1">
+              <button
+                type="button"
+                onClick={closeDeleteModal}
+                className="px-4 py-2 text-xs font-black neo-btn bg-white text-black"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmDelete}
+                disabled={isDeletingEverything && deleteConfirmText.trim().toUpperCase() !== 'APAGAR'}
+                className="px-4 py-2 text-xs font-black neo-btn bg-[#FF3366] text-white disabled:opacity-40 flex items-center gap-2"
+              >
+                <Trash2 className="w-4 h-4" />
+                <span>Apagar definitivamente</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Console de Logs de Ingestão */}
       <div className="bg-[#111111] text-gray-200 neo-border neo-shadow p-4 font-mono text-xs">

@@ -6,7 +6,7 @@
  * Suporta exportação para arquivo SQL (compatível com SQLite nativo no Windows 11).
  */
 
-import type { Question, UserAttempt, UserProfile, DrawingStroke, FilterState, SrsItemData, SrsRating } from '../../types/index.ts';
+import type { Question, UserAttempt, UserProfile, DrawingStroke, FilterState, SrsItemData, SrsRating, ExamType, DisciplineType } from '../../types/index.ts';
 import { INITIAL_QUESTION_SEED } from '../ingestion/questionSeed.ts';
 
 const STORAGE_KEYS = {
@@ -59,7 +59,7 @@ export function getStoredQuestions(): Question[] {
       return cleanSeed;
     }
     const parsed = JSON.parse(raw);
-    const questionsList = Array.isArray(parsed) && parsed.length > 0 ? parsed : INITIAL_QUESTION_SEED;
+    const questionsList = Array.isArray(parsed) ? parsed : INITIAL_QUESTION_SEED;
     const deduplicated = deduplicateQuestions(questionsList);
     if (deduplicated.length !== questionsList.length) {
       localStorage.setItem(STORAGE_KEYS.QUESTIONS, JSON.stringify(deduplicated));
@@ -84,6 +84,40 @@ export function saveQuestions(newQuestions: Question[]): Question[] {
   } catch (e) {
     console.error('Falha ao salvar questões no banco local:', e);
     return getStoredQuestions();
+  }
+}
+
+/**
+ * Critérios para apagar questões do banco local. 'TODOS'/'TODAS' significa "sem filtro" naquele nível.
+ */
+export interface QuestionDeletionCriteria {
+  vestibular: ExamType | 'TODOS';
+  discipline: DisciplineType | 'TODAS';
+  topic: string | 'TODOS';
+}
+
+export function matchesDeletionCriteria(question: Question, criteria: QuestionDeletionCriteria): boolean {
+  if (criteria.vestibular !== 'TODOS' && question.vestibular !== criteria.vestibular) return false;
+  if (criteria.discipline !== 'TODAS' && question.discipline !== criteria.discipline) return false;
+  if (criteria.topic !== 'TODOS' && question.topic !== criteria.topic) return false;
+  return true;
+}
+
+/**
+ * Apaga do banco local as questões que atendem aos critérios (vestibular, matéria e conteúdo específico).
+ * Tentativas, itens de revisão espaçada e rascunhos já salvos não são alterados.
+ */
+export function deleteQuestionsByFilter(
+  criteria: QuestionDeletionCriteria
+): { remaining: Question[]; removedCount: number } {
+  const current = getStoredQuestions();
+  try {
+    const remaining = current.filter((q) => !matchesDeletionCriteria(q, criteria));
+    localStorage.setItem(STORAGE_KEYS.QUESTIONS, JSON.stringify(remaining));
+    return { remaining, removedCount: current.length - remaining.length };
+  } catch (e) {
+    console.error('Falha ao apagar questões do banco local:', e);
+    return { remaining: current, removedCount: 0 };
   }
 }
 

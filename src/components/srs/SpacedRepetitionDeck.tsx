@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 import type { Question, SrsItemData, SrsRating } from '../../types/index.ts';
 import { isSrsItemDue, formatDateYmd } from '../../services/srs/srsEngine.ts';
+import { richTextToPlain } from '../../utils/richText.ts';
 
 interface SpacedRepetitionDeckProps {
   questions: Question[];
@@ -215,7 +216,7 @@ export const SpacedRepetitionDeck: React.FC<SpacedRepetitionDeckProps> = ({
                       )}
                     </div>
                     <p className="text-xs font-semibold text-gray-800 line-clamp-2">
-                      {q.statement}
+                      {richTextToPlain(q.statement)}
                     </p>
                   </div>
 

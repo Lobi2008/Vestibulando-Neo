@@ -24,6 +24,7 @@ import {
 } from 'lucide-react';
 import type { Question, UserAttempt, DrawingStroke, StylusLayoutMode, SrsRating, SrsItemData } from '../../types/index.ts';
 import { DigitalPenCanvas } from '../canvas/DigitalPenCanvas.tsx';
+import { RichText } from '../common/RichText.tsx';
 
 interface QuestionCardProps {
   question: Question;
@@ -294,15 +295,17 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({
 
           {/* Texto de Contexto */}
           {question.contextSnippet && (
-            <div className="mb-4 p-3 bg-[#FBF8F1] border-l-4 border-black text-sm italic text-gray-800">
-              {question.contextSnippet}
-            </div>
+            <RichText
+              text={question.contextSnippet}
+              className="mb-4 p-3 bg-[#FBF8F1] border-l-4 border-black text-sm italic text-gray-800"
+            />
           )}
 
           {/* Enunciado Principal */}
-          <div className="text-base md:text-lg font-semibold text-gray-900 leading-relaxed mb-6">
-            {question.statement}
-          </div>
+          <RichText
+            text={question.statement}
+            className="text-base md:text-lg font-semibold text-gray-900 leading-relaxed mb-6"
+          />
 
           {/* Lista de Alternativas (A-E) */}
           <div className="space-y-3 mb-6">
@@ -335,9 +338,12 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({
                   <span className="w-7 h-7 flex-shrink-0 flex items-center justify-center font-black text-sm bg-black text-white rounded-none neo-border-sm">
                     {alt.id}
                   </span>
-                  <span className="text-sm md:text-base font-medium flex-1 pt-0.5">
-                    {alt.text}
-                  </span>
+                  <RichText
+                    as="span"
+                    text={alt.text}
+                    className="text-sm md:text-base font-medium flex-1 min-w-0 pt-0.5"
+                    imgClassName="max-h-60"
+                  />
 
                   {hasSubmitted && isCorrectOption && (
                     <CheckCircle2 className="w-6 h-6 text-black flex-shrink-0" />
@@ -504,9 +510,10 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({
                   <Lightbulb className="w-4 h-4 text-amber-500" />
                   Resolução Comentada Passo a Passo:
                 </h4>
-                <div className="text-sm text-gray-800 font-sans whitespace-pre-line leading-relaxed bg-white p-3 neo-border-sm">
-                  {question.explanation}
-                </div>
+                <RichText
+                  text={question.explanation}
+                  className="text-sm text-gray-800 font-sans leading-relaxed bg-white p-3 neo-border-sm"
+                />
               </div>
             </div>
           )}

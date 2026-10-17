@@ -41,6 +41,37 @@ function mapRawAreaToStandard(rawArea: string): { area: AreaOfKnowledge; discipl
   return { area: 'Linguagens, Códigos e suas Tecnologias', discipline: 'Língua Portuguesa e Literatura' };
 }
 
+/**
+ * Extrai o texto de uma alternativa da API. Alternativas que são imagens (campo `file`)
+ * viram markdown de imagem para serem exibidas no card em vez de ficarem vazias.
+ */
+function extractAlternativeText(alt: any, fallback: string): string {
+  if (alt && typeof alt === 'object') {
+    const text = typeof alt.text === 'string' ? alt.text.trim() : '';
+    const file = alt.file || alt.image || alt.imageUrl;
+    if (file) return text ? `${text}\n![](${file})` : `![](${file})`;
+    return text || fallback;
+  }
+  return alt || fallback;
+}
+
+/**
+ * Monta o enunciado completo: texto de apoio (context) seguido da pergunta da questão
+ * (alternativesIntroduction). Sem a pergunta, a questão aparecia só com os textos de apoio.
+ */
+function buildStatement(rawQ: any): string {
+  const base = String(rawQ.statement || rawQ.context || rawQ.prompt || '').trim();
+  const question = String(
+    rawQ.alternativesIntroduction || rawQ.alternatives_introduction || rawQ.question || ''
+  ).trim();
+
+  const parts = [base];
+  if (question && !base.includes(question)) parts.push(question);
+
+  const full = parts.filter(Boolean).join('\n');
+  return full || 'Enunciado oficial ENEM obtido via enem.dev.';
+}
+
 /** Limite máximo de itens por requisição aceito pela API enem.dev (parâmetro `limit` ≤ 50). */
 const ENEM_PAGE_SIZE = 50;
 /** Trava de segurança contra loop infinito de paginação (20 páginas × 50 = 1000 questões por ano). */
@@ -141,11 +172,11 @@ export async function fetchFromEnemDev(
 
               const alts = rawQ.alternatives || [];
               const alternatives = [
-                { id: 'A' as const, text: typeof alts[0] === 'object' ? alts[0]?.text : (alts[0] || 'Alternativa A') },
-                { id: 'B' as const, text: typeof alts[1] === 'object' ? alts[1]?.text : (alts[1] || 'Alternativa B') },
-                { id: 'C' as const, text: typeof alts[2] === 'object' ? alts[2]?.text : (alts[2] || 'Alternativa C') },
-                { id: 'D' as const, text: typeof alts[3] === 'object' ? alts[3]?.text : (alts[3] || 'Alternativa D') },
-                { id: 'E' as const, text: typeof alts[4] === 'object' ? alts[4]?.text : (alts[4] || 'Alternativa E') },
+                { id: 'A' as const, text: extractAlternativeText(alts[0], 'Alternativa A') },
+                { id: 'B' as const, text: extractAlternativeText(alts[1], 'Alternativa B') },
+                { id: 'C' as const, text: extractAlternativeText(alts[2], 'Alternativa C') },
+                { id: 'D' as const, text: extractAlternativeText(alts[3], 'Alternativa D') },
+                { id: 'E' as const, text: extractAlternativeText(alts[4], 'Alternativa E') },
               ];
 
               const classification = classifyQuestion({
@@ -165,7 +196,7 @@ export async function fetchFromEnemDev(
                 discipline: classification.discipline,
                 topic: rawQ.topic || classification.topic,
                 subtopic: rawQ.subtopic || 'Matriz de Referência ENEM',
-                statement: rawQ.statement || rawQ.context || rawQ.prompt || 'Enunciado oficial ENEM obtido via enem.dev.',
+                statement: buildStatement(rawQ),
                 contextSnippet: rawQ.contextSnippet || rawQ.legend || undefined,
                 alternatives,
                 correctAlternative: (rawQ.correctAlternative || 'A').toUpperCase() as any,
