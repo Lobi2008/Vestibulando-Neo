@@ -34,7 +34,12 @@ export function deduplicateQuestions(questions: Question[]): Question[] {
   const uniqueMap = new Map<string, Question>();
   for (const q of questions) {
     const normalizedStatement = (q.statement || '').trim().toLowerCase().replace(/\s+/g, ' ').substring(0, 120);
-    const key = `${q.vestibular}-${normalizedStatement}`;
+    // As alternativas entram na chave: várias questões do ENEM compartilham o mesmo texto-base
+    // (ou nenhum), e comparar só o enunciado as descartava como "duplicadas".
+    const alternativesKey = (q.alternatives || [])
+      .map((a) => (a.text || '').trim().toLowerCase().replace(/\s+/g, ' ').substring(0, 60))
+      .join('|');
+    const key = `${q.vestibular}-${normalizedStatement}-${alternativesKey}`;
     if (!uniqueMap.has(key)) {
       uniqueMap.set(key, q);
     }

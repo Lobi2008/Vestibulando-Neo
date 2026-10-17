@@ -7,6 +7,7 @@
 
 import type { Question, ExamType, AreaOfKnowledge, DisciplineType } from '../../types/index.ts';
 import { INITIAL_QUESTION_SEED } from './questionSeed.ts';
+import { classifyQuestion } from './questionClassifier.ts';
 
 export interface IngestionLog {
   timestamp: number;
@@ -40,6 +41,75 @@ function mapRawAreaToStandard(rawArea: string): { area: AreaOfKnowledge; discipl
   return { area: 'Linguagens, Códigos e suas Tecnologias', discipline: 'Língua Portuguesa e Literatura' };
 }
 
+/** Limite máximo de itens por requisição aceito pela API enem.dev (parâmetro `limit` ≤ 50). */
+const ENEM_PAGE_SIZE = 50;
+/** Trava de segurança contra loop infinito de paginação (20 páginas × 50 = 1000 questões por ano). */
+const ENEM_MAX_PAGES_PER_YEAR = 20;
+
+const sleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
+
+/**
+ * Busca TODAS as questões de um exame percorrendo a paginação da API enem.dev
+ * (`limit` + `offset`). Sem isso a API devolve só a primeira página (poucas questões) por ano.
+ */
+async function fetchAllEnemQuestionsOfYear(
+  year: number,
+  onPage?: (loadedInYear: number) => void
+): Promise<any[]> {
+  const all: any[] = [];
+  let offset = 0;
+
+  for (let pageNum = 0; pageNum < ENEM_MAX_PAGES_PER_YEAR; pageNum++) {
+    let page: any = null;
+
+    // Até 3 tentativas por página (rate limit 429, timeout ou falha de rede)
+    for (let attempt = 0; attempt < 3 && page === null; attempt++) {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 7000);
+      try {
+        const response = await fetch(
+          `https://api.enem.dev/v1/exams/${year}/questions?limit=${ENEM_PAGE_SIZE}&offset=${offset}`,
+          { signal: controller.signal, headers: { Accept: 'application/json' } }
+        );
+
+        if (response.ok) {
+          page = await response.json();
+        } else if (response.status === 429) {
+          await sleep(1500 * (attempt + 1));
+        } else {
+          break; // erro definitivo (404, 400...): não adianta repetir
+        }
+      } catch (e) {
+        // Timeout/rede: tenta novamente
+      } finally {
+        clearTimeout(timeoutId);
+      }
+    }
+
+    if (page === null) break;
+
+    const items = Array.isArray(page) ? page : (page.questions || page.items || []);
+    if (!Array.isArray(items) || items.length === 0) break;
+
+    all.push(...items);
+    offset += items.length;
+    onPage?.(all.length);
+
+    // Critérios de parada: a API informou que acabou, ou a página veio incompleta
+    const meta = Array.isArray(page) ? undefined : page.metadata;
+    if (meta && typeof meta.hasMore === 'boolean') {
+      if (!meta.hasMore) break;
+    } else if (items.length < ENEM_PAGE_SIZE) {
+      break;
+    }
+    if (meta && typeof meta.total === 'number' && offset >= meta.total) break;
+
+    await sleep(200); // respeita o rate limit da API entre páginas
+  }
+
+  return all;
+}
+
 /**
  * Conecta à API enem.dev realizando um loop de paginação e agregação através de múltiplos exames.
  * Coleta uma quantia volumosa de questões (30 a 50+ itens) por ciclo de sincronização.
@@ -48,7 +118,7 @@ export async function fetchFromEnemDev(
   onProgress?: (count: number, statusMsg: string) => void
 ): Promise<{ questions: Question[]; log: IngestionLog }> {
   const accumulated: Question[] = [];
-  const years = [2023, 2022, 2021, 2020, 2019, 2018];
+  const years = [2023, 2022, 2021, 2020, 2019, 2018, 2017, 2016, 2015, 2014, 2013, 2012, 2011, 2010, 2009];
 
   try {
     onProgress?.(0, 'Conectando à API oficial enem.dev (https://docs.enem.dev/introduction)...');
@@ -57,25 +127,17 @@ export async function fetchFromEnemDev(
       const year = years[i];
       onProgress?.(accumulated.length, `Buscando questões do ENEM ${year} via API enem.dev...`);
 
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 7000);
-
       try {
-        const response = await fetch(`https://api.enem.dev/v1/exams/${year}/questions`, {
-          signal: controller.signal,
-          headers: { Accept: 'application/json' },
+        const baseCount = accumulated.length;
+        const qList = await fetchAllEnemQuestionsOfYear(year, (loadedInYear) => {
+          onProgress?.(baseCount + loadedInYear, `Buscando questões do ENEM ${year} via API enem.dev (${loadedInYear} baixadas)...`);
         });
 
-        clearTimeout(timeoutId);
-
-        if (response.ok) {
-          const data = await response.json();
-          const qList = Array.isArray(data) ? data : (data.questions || data.items || []);
-
+        if (qList.length > 0) {
           if (Array.isArray(qList)) {
             for (let j = 0; j < qList.length; j++) {
               const rawQ = qList[j];
-              const { area, discipline } = mapRawAreaToStandard(rawQ.area || rawQ.discipline || rawQ.subject || 'natureza');
+              const { area } = mapRawAreaToStandard(rawQ.area || rawQ.discipline || rawQ.subject || 'natureza');
 
               const alts = rawQ.alternatives || [];
               const alternatives = [
@@ -86,14 +148,22 @@ export async function fetchFromEnemDev(
                 { id: 'E' as const, text: typeof alts[4] === 'object' ? alts[4]?.text : (alts[4] || 'Alternativa E') },
               ];
 
+              const classification = classifyQuestion({
+                area,
+                context: rawQ.context || rawQ.legend,
+                statement: rawQ.statement || rawQ.prompt || '',
+                alternatives: alternatives.map((a) => a.text),
+                foreignLanguage: rawQ.language,
+              });
+
               accumulated.push({
                 id: `enem-${year}-${rawQ.index || j + 1}`,
                 vestibular: 'ENEM',
                 year: Number(rawQ.year) || year,
                 edition: rawQ.title || `ENEM ${year} - Aplicação Regular`,
                 area,
-                discipline,
-                topic: rawQ.topic || rawQ.hability || 'Competências e Habilidades do ENEM',
+                discipline: classification.discipline,
+                topic: rawQ.topic || classification.topic,
                 subtopic: rawQ.subtopic || 'Matriz de Referência ENEM',
                 statement: rawQ.statement || rawQ.context || rawQ.prompt || 'Enunciado oficial ENEM obtido via enem.dev.',
                 contextSnippet: rawQ.contextSnippet || rawQ.legend || undefined,
