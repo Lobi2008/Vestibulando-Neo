@@ -353,14 +353,14 @@ export const DataSyncHub: React.FC<DataSyncHubProps> = ({
   return (
     <div className="space-y-6">
       {/* Cabeçalho */}
-      <div className="bg-white neo-border neo-shadow p-5 space-y-4">
+      <div className="bg-surface neo-border neo-shadow p-5 space-y-4">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
           <div>
-            <h2 className="text-2xl md:text-3xl font-black text-black flex items-center gap-2">
+            <h2 className="text-2xl md:text-3xl font-black text-ink flex items-center gap-2">
               <Database className="w-6 h-6 text-[#3B82F6]" />
               Banco de questões
             </h2>
-            <p className="text-sm font-bold text-gray-700 mt-1">
+            <p className="text-sm font-bold text-gray-700 dark:text-ink-muted mt-1">
               Importe questões do <strong>enem.dev</strong> e de repositórios abertos, ou envie as suas.
             </p>
           </div>
@@ -382,8 +382,8 @@ export const DataSyncHub: React.FC<DataSyncHubProps> = ({
         </div>
 
         {progressMsg && (
-          <div className="p-2.5 bg-[#FFE600] neo-border-sm flex items-center gap-2 font-mono text-xs font-black animate-pulse">
-            <RefreshCw className="w-4 h-4 animate-spin text-black" />
+          <div className="p-2.5 bg-primary neo-border-sm flex items-center gap-2 font-mono text-xs font-black animate-pulse">
+            <RefreshCw className="w-4 h-4 animate-spin text-ink" />
             <span>{progressMsg}</span>
           </div>
         )}
@@ -392,24 +392,24 @@ export const DataSyncHub: React.FC<DataSyncHubProps> = ({
       {/* Fontes de Ingestão */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
         {/* FONTE 1: ENEM.DEV */}
-        <div className="bg-[#FFFDE7] neo-border neo-shadow p-5 flex flex-col justify-between">
+        <div className="bg-[#FFFDE7] dark:bg-surface-2 neo-border neo-shadow p-5 flex flex-col justify-between">
           <div>
             <div className="flex items-center justify-between pb-2 mb-3 border-b-2 border-black">
-              <span className="font-black text-base bg-[#FFE600] px-2.5 py-1 neo-border-sm">
+              <span className="font-black text-base bg-primary px-2.5 py-1 neo-border-sm">
                 ENEM
               </span>
               <a
                 href="https://enem.dev"
                 target="_blank"
                 rel="noreferrer"
-                className="text-xs font-bold text-gray-700 hover:text-black flex items-center gap-1"
+                className="text-xs font-bold text-gray-700 dark:text-ink-muted hover:text-black flex items-center gap-1"
               >
                 <span>enem.dev</span>
                 <ExternalLink className="w-3 h-3" />
               </a>
             </div>
 
-            <p className="text-sm text-gray-800 leading-relaxed font-medium mb-4">
+            <p className="text-sm text-gray-800 dark:text-ink leading-relaxed font-medium mb-4">
               Provas antigas do ENEM, das 4 áreas, com os parâmetros usados no cálculo da nota TRI.
             </p>
           </div>
@@ -418,7 +418,7 @@ export const DataSyncHub: React.FC<DataSyncHubProps> = ({
             type="button"
             disabled={isLoadingEnem}
             onClick={handleSyncEnemDev}
-            className="w-full py-2.5 px-4 text-sm font-black neo-btn bg-[#FFE600] text-black disabled:opacity-50 flex items-center justify-center gap-2"
+            className="w-full py-2.5 px-4 text-sm font-black neo-btn bg-primary text-ink disabled:opacity-50 flex items-center justify-center gap-2"
           >
             <RefreshCw className={`w-4 h-4 ${isLoadingEnem ? 'animate-spin' : ''}`} />
             <span>{isLoadingEnem ? 'Importando ENEM...' : 'Importar do enem.dev'}</span>
@@ -429,21 +429,21 @@ export const DataSyncHub: React.FC<DataSyncHubProps> = ({
         <div className="bg-[#EBF7FF] neo-border neo-shadow p-5 flex flex-col justify-between">
           <div>
             <div className="flex items-center justify-between pb-2 mb-3 border-b-2 border-black">
-              <span className="font-black text-base bg-[#00F0FF] px-2.5 py-1 neo-border-sm">
+              <span className="font-black text-base bg-secondary px-2.5 py-1 neo-border-sm">
                 UERJ e outros
               </span>
               <a
                 href="https://github.com/beatrizmilz/BancoDeQuestoes"
                 target="_blank"
                 rel="noreferrer"
-                className="text-xs font-bold text-gray-700 hover:text-black flex items-center gap-1"
+                className="text-xs font-bold text-gray-700 dark:text-ink-muted hover:text-black flex items-center gap-1"
               >
                 <span>GitHub</span>
                 <ExternalLink className="w-3 h-3" />
               </a>
             </div>
 
-            <p className="text-sm text-gray-800 leading-relaxed font-medium mb-4">
+            <p className="text-sm text-gray-800 dark:text-ink leading-relaxed font-medium mb-4">
               Questões da UERJ (qualificação) e da 1ª fase da FUVEST e da UNICAMP, separadas por matéria e conteúdo.
             </p>
           </div>
@@ -452,7 +452,7 @@ export const DataSyncHub: React.FC<DataSyncHubProps> = ({
             type="button"
             disabled={isLoadingBeatriz}
             onClick={handleSyncBeatrizMilz}
-            className="w-full py-2.5 px-4 text-sm font-black neo-btn bg-[#00F0FF] text-black disabled:opacity-50 flex items-center justify-center gap-2"
+            className="w-full py-2.5 px-4 text-sm font-black neo-btn bg-secondary text-ink disabled:opacity-50 flex items-center justify-center gap-2"
           >
             <RefreshCw className={`w-4 h-4 ${isLoadingBeatriz ? 'animate-spin' : ''}`} />
             <span>{isLoadingBeatriz ? 'Importando...' : 'Importar UERJ, FUVEST e UNICAMP'}</span>
@@ -461,8 +461,8 @@ export const DataSyncHub: React.FC<DataSyncHubProps> = ({
       </div>
 
       {/* Operações de Persistência Local (SQLite / Backup) */}
-      <div className="bg-white neo-border neo-shadow p-5">
-        <h3 className="text-base font-black uppercase tracking-wider text-black pb-2 mb-4 border-b-2 border-black flex items-center justify-between">
+      <div className="bg-surface neo-border neo-shadow p-5">
+        <h3 className="text-base font-black uppercase tracking-wider text-ink pb-2 mb-4 border-b-2 border-black flex items-center justify-between">
           <span>Backup e restauração</span>
           <span className="text-xs text-green-700 font-bold">Funciona sem internet</span>
         </h3>
@@ -480,7 +480,7 @@ export const DataSyncHub: React.FC<DataSyncHubProps> = ({
           <button
             type="button"
             onClick={handleResetSeed}
-            className="px-4 py-2 text-xs font-bold neo-btn bg-gray-200 text-black hover:bg-red-100"
+            className="px-4 py-2 text-xs font-bold neo-btn bg-gray-200 text-ink hover:bg-red-100"
           >
             Restaurar questões padrão
           </button>
@@ -488,13 +488,13 @@ export const DataSyncHub: React.FC<DataSyncHubProps> = ({
       </div>
 
       {/* Enviar o próprio banco de questões (upload .json / .csv) */}
-      <div className="bg-white neo-border neo-shadow p-5 space-y-4">
-        <h3 className="text-base font-black uppercase tracking-wider text-black pb-2 border-b-2 border-black flex items-center gap-2">
+      <div className="bg-surface neo-border neo-shadow p-5 space-y-4">
+        <h3 className="text-base font-black uppercase tracking-wider text-ink pb-2 border-b-2 border-black flex items-center gap-2">
           <Upload className="w-4 h-4 text-[#00AA44]" />
           <span>Enviar minhas questões</span>
         </h3>
 
-        <p className="text-sm font-bold text-gray-700 leading-relaxed">
+        <p className="text-sm font-bold text-gray-700 dark:text-ink-muted leading-relaxed">
           Baixe o modelo, preencha com as suas questões e envie de volta. Aceita <strong>.json</strong> e <strong>.csv</strong> (Excel salvo como CSV). Questões repetidas não são duplicadas.
         </p>
 
@@ -502,7 +502,7 @@ export const DataSyncHub: React.FC<DataSyncHubProps> = ({
           <button
             type="button"
             onClick={handleDownloadCsvTemplate}
-            className="px-4 py-2 text-xs font-black neo-btn bg-white dark:bg-[#27272A] text-black dark:text-white flex items-center gap-2"
+            className="px-4 py-2 text-xs font-black neo-btn bg-surface text-ink flex items-center gap-2"
           >
             <Download className="w-4 h-4" />
             <span>Modelo (.csv / Excel)</span>
@@ -511,7 +511,7 @@ export const DataSyncHub: React.FC<DataSyncHubProps> = ({
           <button
             type="button"
             onClick={handleDownloadJsonTemplate}
-            className="px-4 py-2 text-xs font-black neo-btn bg-white dark:bg-[#27272A] text-black dark:text-white flex items-center gap-2"
+            className="px-4 py-2 text-xs font-black neo-btn bg-surface text-ink flex items-center gap-2"
           >
             <Download className="w-4 h-4" />
             <span>Modelo (.json)</span>
@@ -557,7 +557,7 @@ export const DataSyncHub: React.FC<DataSyncHubProps> = ({
             )}
 
             {importReport.errors.length > 0 && (
-              <ul className="font-mono text-[11px] space-y-0.5 max-h-40 overflow-y-auto bg-white dark:bg-[#18181B] text-gray-900 dark:text-gray-100 p-2 neo-border-sm">
+              <ul className="font-mono text-[11px] space-y-0.5 max-h-40 overflow-y-auto bg-surface text-gray-900 dark:text-ink p-2 neo-border-sm">
                 {importReport.errors.slice(0, 50).map((err, idx) => (
                   <li key={idx}>
                     Linha {err.row}: {err.message}
@@ -570,11 +570,11 @@ export const DataSyncHub: React.FC<DataSyncHubProps> = ({
         )}
 
         <details className="text-xs">
-          <summary className="cursor-pointer font-black text-black">Ver formato do arquivo</summary>
+          <summary className="cursor-pointer font-black text-ink">Ver formato do arquivo</summary>
           <div className="mt-3 overflow-x-auto">
             <table className="w-full text-left border-collapse">
               <thead>
-                <tr className="border-b-2 border-black dark:border-gray-600 text-black">
+                <tr className="border-b-2 border-black dark:border-gray-600 text-ink">
                   <th className="py-1 pr-3 font-black">Campo</th>
                   <th className="py-1 pr-3 font-black">Obrigatório</th>
                   <th className="py-1 font-black">O que colocar</th>
@@ -583,14 +583,14 @@ export const DataSyncHub: React.FC<DataSyncHubProps> = ({
               <tbody>
                 {IMPORT_FIELD_GUIDE.map((item) => (
                   <tr key={item.field} className="border-b border-gray-300 dark:border-gray-700 align-top">
-                    <td className="py-1.5 pr-3 font-mono font-bold text-black whitespace-nowrap">{item.field}</td>
-                    <td className="py-1.5 pr-3 font-bold text-gray-700 whitespace-nowrap">{item.required ? 'Sim' : 'Não'}</td>
-                    <td className="py-1.5 text-gray-700">{item.description}</td>
+                    <td className="py-1.5 pr-3 font-mono font-bold text-ink whitespace-nowrap">{item.field}</td>
+                    <td className="py-1.5 pr-3 font-bold text-gray-700 dark:text-ink-muted whitespace-nowrap">{item.required ? 'Sim' : 'Não'}</td>
+                    <td className="py-1.5 text-gray-700 dark:text-ink-muted">{item.description}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
-            <p className="mt-2 text-gray-700">
+            <p className="mt-2 text-gray-700 dark:text-ink-muted">
               No CSV, a primeira linha deve ter exatamente esses nomes de coluna. Para quebrar linha numa célula do Excel, use Alt+Enter.
             </p>
           </div>
@@ -598,14 +598,14 @@ export const DataSyncHub: React.FC<DataSyncHubProps> = ({
       </div>
 
       {/* Apagar questões do banco (com filtros e confirmação) */}
-      <div className="bg-[#FFF0F3] neo-border neo-shadow p-5">
-        <h3 className="text-base font-black uppercase tracking-wider text-black pb-2 mb-4 border-b-2 border-black flex items-center gap-2">
+      <div className="bg-[#FFF0F3] dark:bg-surface-2 neo-border neo-shadow p-5">
+        <h3 className="text-base font-black uppercase tracking-wider text-ink pb-2 mb-4 border-b-2 border-black flex items-center gap-2">
           <Trash2 className="w-4 h-4 text-[#FF3366]" />
           <span>Apagar questões</span>
         </h3>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
-          <label className="text-xs font-black text-black space-y-1 block">
+          <label className="text-xs font-black text-ink space-y-1 block">
             <span>Vestibular</span>
             <select
               value={deleteVestibular}
@@ -614,7 +614,7 @@ export const DataSyncHub: React.FC<DataSyncHubProps> = ({
                 setDeleteDiscipline('TODAS');
                 setDeleteTopic('TODOS');
               }}
-              className="w-full bg-white neo-border-sm px-2 py-2 text-xs font-bold text-black"
+              className="w-full bg-surface neo-border-sm px-2 py-2 text-xs font-bold text-ink"
             >
               <option value="TODOS">Todos</option>
               {vestibularOptions.map(([name, count]) => (
@@ -625,7 +625,7 @@ export const DataSyncHub: React.FC<DataSyncHubProps> = ({
             </select>
           </label>
 
-          <label className="text-xs font-black text-black space-y-1 block">
+          <label className="text-xs font-black text-ink space-y-1 block">
             <span>Matéria</span>
             <select
               value={deleteDiscipline}
@@ -633,7 +633,7 @@ export const DataSyncHub: React.FC<DataSyncHubProps> = ({
                 setDeleteDiscipline(e.target.value as DisciplineType | 'TODAS');
                 setDeleteTopic('TODOS');
               }}
-              className="w-full bg-white neo-border-sm px-2 py-2 text-xs font-bold text-black"
+              className="w-full bg-surface neo-border-sm px-2 py-2 text-xs font-bold text-ink"
             >
               <option value="TODAS">Todas</option>
               {disciplineOptions.map(([name, count]) => (
@@ -644,12 +644,12 @@ export const DataSyncHub: React.FC<DataSyncHubProps> = ({
             </select>
           </label>
 
-          <label className="text-xs font-black text-black space-y-1 block">
+          <label className="text-xs font-black text-ink space-y-1 block">
             <span>Conteúdo</span>
             <select
               value={deleteTopic}
               onChange={(e) => setDeleteTopic(e.target.value)}
-              className="w-full bg-white neo-border-sm px-2 py-2 text-xs font-bold text-black"
+              className="w-full bg-surface neo-border-sm px-2 py-2 text-xs font-bold text-ink"
             >
               <option value="TODOS">Todos</option>
               {topicOptions.map(([name, count]) => (
@@ -662,7 +662,7 @@ export const DataSyncHub: React.FC<DataSyncHubProps> = ({
         </div>
 
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <span className="text-sm font-bold text-gray-800">
+          <span className="text-sm font-bold text-gray-800 dark:text-ink">
             {deleteMatchCount} questão(ões) nos filtros escolhidos.
           </span>
           <button
@@ -687,26 +687,26 @@ export const DataSyncHub: React.FC<DataSyncHubProps> = ({
           onClick={closeDeleteModal}
         >
           <div
-            className="w-full max-w-md bg-white neo-border-thick neo-shadow-xl p-5 space-y-4"
+            className="w-full max-w-md bg-surface neo-border-thick neo-shadow-xl p-5 space-y-4"
             onClick={(e) => e.stopPropagation()}
           >
-            <h4 id="delete-questions-title" className="text-base font-black text-black flex items-center gap-2">
+            <h4 id="delete-questions-title" className="text-base font-black text-ink flex items-center gap-2">
               <AlertTriangle className="w-5 h-5 text-[#FF3366]" />
               Confirmar exclusão
             </h4>
 
-            <p className="text-sm font-bold text-gray-900">
+            <p className="text-sm font-bold text-gray-900 dark:text-ink">
               Você vai apagar <span className="text-[#FF3366]">{deleteMatchCount}</span> questão(ões). Isso não pode ser desfeito.
             </p>
 
-            <ul className="text-xs font-mono bg-[#F5F2EA] neo-border-sm p-3 space-y-1 text-black">
+            <ul className="text-xs font-mono bg-surface-2 neo-border-sm p-3 space-y-1 text-ink">
               <li>Vestibular: <strong>{deleteVestibular === 'TODOS' ? 'Todos' : deleteVestibular}</strong></li>
               <li>Matéria: <strong>{deleteDiscipline === 'TODAS' ? 'Todas' : deleteDiscipline}</strong></li>
               <li>Conteúdo: <strong>{deleteTopic === 'TODOS' ? 'Todos' : deleteTopic}</strong></li>
             </ul>
 
             {isDeletingEverything && (
-              <label className="block text-xs font-black text-black space-y-1">
+              <label className="block text-xs font-black text-ink space-y-1">
                 <span>
                   Sem filtros, isso apaga TODAS as questões. Digite <strong>APAGAR</strong> para confirmar.
                 </span>
@@ -715,7 +715,7 @@ export const DataSyncHub: React.FC<DataSyncHubProps> = ({
                   value={deleteConfirmText}
                   onChange={(e) => setDeleteConfirmText(e.target.value)}
                   autoFocus
-                  className="w-full bg-white neo-border-sm px-2 py-2 text-sm font-mono text-black"
+                  className="w-full bg-surface neo-border-sm px-2 py-2 text-sm font-mono text-ink"
                   placeholder="APAGAR"
                 />
               </label>
@@ -725,7 +725,7 @@ export const DataSyncHub: React.FC<DataSyncHubProps> = ({
               <button
                 type="button"
                 onClick={closeDeleteModal}
-                className="px-4 py-2 text-xs font-black neo-btn bg-white text-black"
+                className="px-4 py-2 text-xs font-black neo-btn bg-surface text-ink"
               >
                 Cancelar
               </button>

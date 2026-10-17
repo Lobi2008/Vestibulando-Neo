@@ -129,28 +129,28 @@ export const StudySessionStarter: React.FC<StudySessionStarterProps> = ({
         <button
           type="button"
           onClick={onBackToHome}
-          className="px-3.5 py-1.5 text-xs font-black neo-btn bg-white dark:bg-[#18181B] text-black dark:text-white flex items-center gap-2 hover:bg-gray-100"
+          className="px-3.5 py-1.5 text-xs font-black neo-btn bg-surface text-ink flex items-center gap-2 hover:bg-gray-100"
         >
           <ArrowLeft className="w-4 h-4" />
           <span>Voltar</span>
         </button>
 
-        <span className="text-xs font-mono font-bold text-gray-600 dark:text-gray-400">
+        <span className="text-xs font-mono font-bold text-gray-600 dark:text-ink-muted">
           Simulado
         </span>
       </div>
 
       {/* Cabeçalho da Configuração */}
-      <div className="bg-white dark:bg-[#18181B] neo-border neo-shadow p-5 md:p-6">
+      <div className="bg-surface neo-border neo-shadow p-5 md:p-6">
         <div className="flex items-center gap-2 mb-2">
-          <div className="p-2 bg-[#FFE600] text-black neo-border-sm">
+          <div className="p-2 bg-primary text-ink neo-border-sm">
             <Sliders className="w-5 h-5" />
           </div>
           <div>
-            <h2 className="text-2xl md:text-3xl font-black text-black dark:text-white uppercase tracking-tight">
+            <h2 className="text-2xl md:text-3xl font-black text-ink uppercase tracking-tight">
               Novo simulado
             </h2>
-            <p className="text-sm font-bold text-gray-700 dark:text-gray-300">
+            <p className="text-sm font-bold text-gray-700 dark:text-ink-muted">
               Escolha quantas questões e de qual assunto.
             </p>
           </div>
@@ -159,13 +159,13 @@ export const StudySessionStarter: React.FC<StudySessionStarterProps> = ({
 
       {/* SEÇÃO 1: Quantidade de questões
  (Sistema Dinâmico com Scroll e Clique) */}
-      <div className="bg-white dark:bg-[#18181B] neo-border neo-shadow p-6 space-y-4">
+      <div className="bg-surface neo-border neo-shadow p-6 space-y-4">
         <div className="flex items-center justify-between border-b-2 border-black dark:border-gray-700 pb-2">
           <div className="flex items-center gap-2">
             <span className="w-6 h-6 flex items-center justify-center bg-black text-white dark:bg-[#FFE600] dark:text-black font-black text-xs">
               1
             </span>
-            <h3 className="text-base font-black uppercase tracking-wider text-black dark:text-white">
+            <h3 className="text-base font-black uppercase tracking-wider text-ink">
               Quantidade de questões
 
             </h3>
@@ -181,7 +181,7 @@ export const StudySessionStarter: React.FC<StudySessionStarterProps> = ({
           {/* Caixa de Scroll / Digitação */}
           <div
             onWheel={handleWheelVolume}
-            className="flex items-center gap-3 bg-[#F8F5EE] dark:bg-[#202024] p-3 neo-border select-none"
+            className="flex items-center gap-3 bg-page p-3 neo-border select-none"
             title="Role o mouse para mudar a quantidade"
           >
             {/* Botão Diminuir */}
@@ -189,7 +189,7 @@ export const StudySessionStarter: React.FC<StudySessionStarterProps> = ({
               type="button"
               onClick={() => setQuestionCount((prev) => Math.max(1, prev - 1))}
               disabled={questionCount <= 1}
-              className="w-10 h-10 bg-white dark:bg-[#27272A] neo-border-sm flex items-center justify-center font-black text-black dark:text-white hover:bg-gray-200 dark:hover:bg-gray-700 disabled:opacity-30"
+              className="w-10 h-10 bg-surface neo-border-sm flex items-center justify-center font-black text-ink hover:bg-gray-200 dark:hover:bg-gray-700 disabled:opacity-30"
               title="Diminuir"
             >
               <Minus className="w-5 h-5 stroke-[3]" />
@@ -198,7 +198,7 @@ export const StudySessionStarter: React.FC<StudySessionStarterProps> = ({
             {/* Valor Numérico Central (Clique para digitar) */}
             <div
               onClick={() => setIsEditingCount(true)}
-              className="w-32 h-16 bg-white dark:bg-[#18181B] neo-border-sm flex flex-col items-center justify-center cursor-pointer hover:border-[#FFE600] transition-colors relative"
+              className="w-32 h-16 bg-surface neo-border-sm flex flex-col items-center justify-center cursor-pointer hover:border-[#FFE600] transition-colors relative"
               title="Clique para digitar"
             >
               {isEditingCount ? (
@@ -218,11 +218,11 @@ export const StudySessionStarter: React.FC<StudySessionStarterProps> = ({
                   onKeyDown={(e) => {
                     if (e.key === 'Enter') setIsEditingCount(false);
                   }}
-                  className="w-full text-center text-3xl font-black bg-transparent text-black dark:text-white focus:outline-none"
+                  className="w-full text-center text-3xl font-black bg-transparent text-ink focus:outline-none"
                 />
               ) : (
                 <>
-                  <span className="text-3xl font-black text-black dark:text-[#FFE600] tracking-tight">
+                  <span className="text-3xl font-black text-ink dark:text-[#FFE600] tracking-tight">
                     {questionCount}
                   </span>
                   <span className="text-[9px] uppercase font-bold text-gray-500 dark:text-gray-400">
@@ -237,7 +237,7 @@ export const StudySessionStarter: React.FC<StudySessionStarterProps> = ({
               type="button"
               onClick={() => setQuestionCount((prev) => Math.min(prev + 1, maxAvailable))}
               disabled={questionCount >= maxAvailable}
-              className="w-10 h-10 bg-white dark:bg-[#27272A] neo-border-sm flex items-center justify-center font-black text-black dark:text-white hover:bg-gray-200 dark:hover:bg-gray-700 disabled:opacity-30"
+              className="w-10 h-10 bg-surface neo-border-sm flex items-center justify-center font-black text-ink hover:bg-gray-200 dark:hover:bg-gray-700 disabled:opacity-30"
               title="Aumentar"
             >
               <Plus className="w-5 h-5 stroke-[3]" />
@@ -245,15 +245,15 @@ export const StudySessionStarter: React.FC<StudySessionStarterProps> = ({
           </div>
 
           {/* Dicas e Instruções Interativas */}
-          <div className="space-y-1.5 text-xs text-gray-700 dark:text-gray-300 max-w-xs text-center sm:text-left">
-            <div className="flex items-center gap-1.5 font-bold text-black dark:text-white">
+          <div className="space-y-1.5 text-xs text-gray-700 dark:text-ink-muted max-w-xs text-center sm:text-left">
+            <div className="flex items-center gap-1.5 font-bold text-ink">
               <MousePointer className="w-4 h-4 text-[#FF5A36]" />
               <span>Dicas:</span>
             </div>
-            <p className="text-xs text-gray-600 dark:text-gray-400">
+            <p className="text-xs text-gray-600 dark:text-ink-muted">
               • <strong>Role o mouse</strong> para mudar de 1 em 1.
             </p>
-            <p className="text-xs text-gray-600 dark:text-gray-400">
+            <p className="text-xs text-gray-600 dark:text-ink-muted">
               • <strong>Clique no número</strong> para digitar o valor.
             </p>
           </div>
@@ -261,19 +261,19 @@ export const StudySessionStarter: React.FC<StudySessionStarterProps> = ({
       </div>
 
       {/* SEÇÃO 2: VESTIBULARES E ÁREAS DE CONHECIMENTO */}
-      <div className="bg-white dark:bg-[#18181B] neo-border neo-shadow p-6 space-y-5">
+      <div className="bg-surface neo-border neo-shadow p-6 space-y-5">
         <div className="flex items-center gap-2 border-b-2 border-black dark:border-gray-700 pb-2">
           <span className="w-6 h-6 flex items-center justify-center bg-black text-white dark:bg-[#FFE600] dark:text-black font-black text-xs">
             2
           </span>
-          <h3 className="text-base font-black uppercase tracking-wider text-black dark:text-white">
+          <h3 className="text-base font-black uppercase tracking-wider text-ink">
             Assunto
           </h3>
         </div>
 
         {/* Escolha do Vestibular */}
         <div>
-          <label className="block text-sm font-black uppercase tracking-wider text-gray-700 dark:text-gray-300 mb-2">
+          <label className="block text-sm font-black uppercase tracking-wider text-gray-700 dark:text-ink-muted mb-2">
             Vestibular
 
           </label>
@@ -288,14 +288,14 @@ export const StudySessionStarter: React.FC<StudySessionStarterProps> = ({
                     setSelectedVestibular(vest.id);
                     setSelectedTopic('TODOS');
                   }}
-                  className={`p-2.5 text-left neo-border-sm flex flex-col justify-between transition-all ${
+                  className={`p-2.5 text-left neo-border-sm flex flex-col justify-between transition-colors ${
                     isSelected
-                      ? 'bg-[#FFE600] text-black font-black scale-102 shadow-none'
-                      : 'bg-[#F8F5EE] dark:bg-[#202024] text-gray-800 dark:text-gray-200 hover:bg-yellow-50 dark:hover:bg-gray-700 font-bold'
+                      ? 'bg-primary text-ink font-black scale-102 shadow-none'
+                      : 'bg-page text-gray-800 dark:text-ink hover:bg-yellow-50 dark:hover:bg-gray-700 font-bold'
                   }`}
                 >
                   <span className="text-sm">{vest.label}</span>
-                  <span className="text-[9px] font-mono uppercase text-gray-600 dark:text-gray-400 mt-1">
+                  <span className="text-[9px] font-mono uppercase text-gray-600 dark:text-ink-muted mt-1">
                     {vest.badge}
                   </span>
                 </button>
@@ -307,7 +307,7 @@ export const StudySessionStarter: React.FC<StudySessionStarterProps> = ({
         {/* Escolha da Área e Conteúdo Específico */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
           <div>
-            <label className="block text-sm font-black uppercase tracking-wider text-gray-700 dark:text-gray-300 mb-1">
+            <label className="block text-sm font-black uppercase tracking-wider text-gray-700 dark:text-ink-muted mb-1">
               Área
 
             </label>
@@ -317,7 +317,7 @@ export const StudySessionStarter: React.FC<StudySessionStarterProps> = ({
                 setSelectedArea(e.target.value as any);
                 setSelectedTopic('TODOS');
               }}
-              className="w-full p-2.5 text-xs font-extrabold neo-border-sm bg-[#F8F5EE] dark:bg-[#27272A] text-black dark:text-white focus:outline-none"
+              className="w-full p-2.5 text-xs font-extrabold neo-border-sm bg-page text-ink focus:outline-none"
             >
               <option value="TODAS">Todas as áreas</option>
               {ALL_AREAS.map((a) => (
@@ -329,13 +329,13 @@ export const StudySessionStarter: React.FC<StudySessionStarterProps> = ({
           </div>
 
           <div>
-            <label className="block text-sm font-black uppercase tracking-wider text-gray-700 dark:text-gray-300 mb-1">
+            <label className="block text-sm font-black uppercase tracking-wider text-gray-700 dark:text-ink-muted mb-1">
               Conteúdo
             </label>
             <select
               value={selectedTopic}
               onChange={(e) => setSelectedTopic(e.target.value)}
-              className="w-full p-2.5 text-xs font-extrabold neo-border-sm bg-[#F8F5EE] dark:bg-[#27272A] text-black dark:text-white focus:outline-none"
+              className="w-full p-2.5 text-xs font-extrabold neo-border-sm bg-page text-ink focus:outline-none"
             >
               <option value="TODOS">Todos os conteúdos</option>
               {availableTopics.map((top) => (
@@ -349,16 +349,16 @@ export const StudySessionStarter: React.FC<StudySessionStarterProps> = ({
       </div>
 
       {/* Resumo da Sessão e Ação de Início */}
-      <div className="bg-[#FFE600] dark:bg-[#27272A] neo-border neo-shadow-lg p-5 flex flex-col sm:flex-row items-center justify-between gap-4">
+      <div className="bg-primary neo-border neo-shadow-lg p-5 flex flex-col sm:flex-row items-center justify-between gap-4">
         <div className="space-y-1 text-center sm:text-left">
-          <div className="flex items-center justify-center sm:justify-start gap-2 text-sm font-black text-black dark:text-white">
+          <div className="flex items-center justify-center sm:justify-start gap-2 text-sm font-black text-ink">
             <Target className="w-4 h-4" />
             <span>Tudo pronto</span>
           </div>
-          <p className="text-sm font-bold text-gray-800 dark:text-gray-300">
+          <p className="text-sm font-bold text-gray-800 dark:text-ink">
             {questionCount} questões • {matchingQuestions.length} disponíveis
           </p>
-          <div className="flex items-center justify-center sm:justify-start gap-1 text-[11px] font-mono text-gray-700 dark:text-gray-400">
+          <div className="flex items-center justify-center sm:justify-start gap-1 text-[11px] font-mono text-gray-700 dark:text-ink-muted">
             <Clock className="w-3.5 h-3.5" />
             <span>Cerca de {estimatedMinutes} min</span>
           </div>

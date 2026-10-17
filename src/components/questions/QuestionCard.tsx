@@ -1,7 +1,7 @@
 /**
  * @file src/components/questions/QuestionCard.tsx
  * @description Card interativo de resolução de questão com design Neobrutalista.
- * Suporta alternativas A-E, eliminação por clique longo de 1.5s, atalhos 'S' e 'CTRL+Z',
+ * Suporta alternativas A-E, eliminação por clique longo de 1s, marca-texto (H), atalhos 'S'/'W' (próxima/anterior) e 'CTRL+Z',
  * botão unificado de Rascunho com múltiplos modos, perguntas em negrito e pontuação automática no ENEM.
  */
 
@@ -23,11 +23,16 @@ import {
   Ban,
   Copy,
   Check,
-  Pencil
+  Pencil,
+  Highlighter
 } from 'lucide-react';
 import type { Question, UserAttempt, DrawingStroke, SrsRating, SrsItemData } from '../../types/index.ts';
 import { DigitalPenCanvas } from '../canvas/DigitalPenCanvas.tsx';
 import { RichText } from '../common/RichText.tsx';
+import { useTextHighlighter } from '../../hooks/useTextHighlighter.ts';
+
+/** Tempo (ms) segurando uma alternativa para riscá-la */
+const HOLD_TO_STRIKE_MS = 1000;
 import { splitStatementAndPrompt } from '../../utils/questionFormatter.ts';
 import {
   buildQuestionClipboard,
@@ -53,7 +58,7 @@ interface QuestionCardProps {
   onRascunhoActiveChange?: (active: boolean) => void;
 }
 
-export const QuestionCard: React.FC<QuestionCardProps> = ({
+const QuestionCardComponent: React.FC<QuestionCardProps> = ({
   question,
   lastAttempt,
   savedStrokes = [],
@@ -86,6 +91,8 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({
   const [eliminatedOptions, setEliminatedOptions] = useState<Record<string, boolean>>({});
   const [holdingAltId, setHoldingAltId] = useState<string | null>(null);
   const holdTimerRef = useRef<any>(null);
+  const highlightRootRef = useRef<HTMLDivElement>(null);
+  const highlighter = useTextHighlighter(highlightRootRef, question.id);
   const isHoldCompletedRef = useRef<boolean>(false);
 
   const [selectedSrsRating, setSelectedSrsRating] = useState<SrsRating | null>(
@@ -193,6 +200,18 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({
         return;
       }
 
+      // Atalho 'W' para voltar à questão anterior
+      if (e.key.toLowerCase() === 'w' && !e.ctrlKey && !e.metaKey && !e.altKey) {
+        onPrevQuestion();
+        return;
+      }
+
+      // Atalho 'H' para ligar/desligar o marca-texto
+      if (e.key.toLowerCase() === 'h' && !e.ctrlKey && !e.metaKey && !e.altKey) {
+        highlighter.toggle();
+        return;
+      }
+
       // Atalho 'S' para pular para a próxima questão
       if (e.key.toLowerCase() === 's' && !e.ctrlKey && !e.metaKey && !e.altKey) {
         onNextQuestion();
@@ -227,7 +246,7 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [selectedOption, hasSubmitted, question, onNextQuestion]);
+  }, [selectedOption, hasSubmitted, question, onNextQuestion, onPrevQuestion, highlighter.toggle]);
 
   const handleSubmitAnswer = () => {
     if (!selectedOption || hasSubmitted) return;
@@ -243,9 +262,10 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({
     onRateSrs?.(question.id, rating);
   };
 
-  // Tratadores de eliminação de alternativa segurando por 1.5s
+  // Tratadores de eliminação de alternativa segurando por 1s
   const handlePointerDownAlt = (altId: string) => {
-    if (hasSubmitted) return;
+    // No modo marca-texto, arrastar sobre a alternativa serve para selecionar, não para riscar
+    if (hasSubmitted || highlighter.enabled) return;
     isHoldCompletedRef.current = false;
     setHoldingAltId(altId);
 
@@ -261,7 +281,7 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({
       if (typeof navigator !== 'undefined' && navigator.vibrate) {
         navigator.vibrate(50);
       }
-    }, 1500);
+    }, HOLD_TO_STRIKE_MS);
   };
 
   const handlePointerUpAlt = () => {
@@ -274,6 +294,8 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({
 
   const handleClickAlt = (altId: 'A' | 'B' | 'C' | 'D' | 'E') => {
     if (hasSubmitted) return;
+    // Acabou de criar/remover um destaque arrastando: não conta como escolha de alternativa
+    if (highlighter.justHighlightedRef.current) return;
     // Se foi long-press, consome o evento sem selecionar a alternativa
     if (isHoldCompletedRef.current) {
       isHoldCompletedRef.current = false;
@@ -292,13 +314,13 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({
 
   const vestibularColor = 
     question.vestibular === 'ENEM' 
-      ? 'bg-[#FFE600] text-black' 
+      ? 'bg-primary text-ink' 
       : question.vestibular === 'UERJ'
-      ? 'bg-[#00F0FF] text-black'
+      ? 'bg-secondary text-ink'
       : question.vestibular === 'FUVEST'
       ? 'bg-[#FF5A36] text-white'
       : question.vestibular === 'CONCURSOS'
-      ? 'bg-purple-300 text-black'
+      ? 'bg-purple-300 text-ink'
       : 'bg-[#00E599] text-black';
 
   const activeRascunhoCount = (showSide ? 1 : 0) + (showBottom ? 1 : 0) + (showOverlay ? 1 : 0);
@@ -306,8 +328,8 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({
   return (
     <div className="space-y-4">
       {/* Barra Superior de Controles: Título Simples "Rascunho" e Botão Unificado */}
-      <div className="bg-white dark:bg-[#18181B] neo-border neo-shadow-sm px-3 py-2 flex flex-wrap items-center justify-between gap-2">
-        <div className="flex items-center gap-1.5 text-xs font-black text-black dark:text-white">
+      <div className="bg-surface neo-border neo-shadow-sm px-3 py-2 flex flex-wrap items-center justify-between gap-2">
+        <div className="flex items-center gap-1.5 text-xs font-black text-ink">
           <Edit3 className="w-4 h-4 text-[#FF5A36]" />
           <span>Rascunho:</span>
         </div>
@@ -319,8 +341,8 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({
             onClick={() => setIsRascunhoMenuOpen(!isRascunhoMenuOpen)}
             className={`px-3 py-1.5 text-xs font-black neo-btn flex items-center gap-2 ${
               activeRascunhoCount > 0 
-                ? 'bg-[#FFE600] text-black' 
-                : 'bg-white text-black hover:bg-gray-100 dark:bg-[#27272A] dark:text-white dark:hover:bg-gray-700'
+                ? 'bg-primary text-ink' 
+                : 'bg-surface text-ink hover:bg-gray-100 dark:hover:bg-gray-700'
             }`}
             title="Escolher onde o rascunho aparece"
           >
@@ -335,7 +357,7 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({
 
           {isRascunhoMenuOpen && (
             <div 
-              className="absolute right-0 top-full mt-2 z-40 bg-white dark:bg-[#1F1F23] neo-border neo-shadow-lg p-2.5 min-w-[190px] space-y-1.5"
+              className="absolute right-0 top-full mt-2 z-40 bg-surface dark:bg-[#1F1F23] neo-border neo-shadow-lg p-2.5 min-w-[190px] space-y-1.5"
               onMouseLeave={() => setIsRascunhoMenuOpen(false)}
             >
               <div className="text-[10px] font-mono uppercase font-black text-gray-500 dark:text-gray-400 pb-1 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
@@ -350,8 +372,8 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({
                 }}
                 className={`w-full text-left px-2.5 py-1.5 text-xs font-bold neo-border-sm flex items-center justify-between transition-colors ${
                   showSide 
-                    ? 'bg-[#FFE600] text-black font-black' 
-                    : 'bg-gray-50 dark:bg-[#27272A] text-gray-800 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-700'
+                    ? 'bg-primary text-ink font-black' 
+                    : 'bg-gray-50 text-gray-800 dark:text-ink hover:bg-gray-200 dark:hover:bg-gray-700'
                 }`}
               >
                 <span className="flex items-center gap-1.5">
@@ -369,8 +391,8 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({
                 }}
                 className={`w-full text-left px-2.5 py-1.5 text-xs font-bold neo-border-sm flex items-center justify-between transition-colors ${
                   showBottom 
-                    ? 'bg-[#FFE600] text-black font-black' 
-                    : 'bg-gray-50 dark:bg-[#27272A] text-gray-800 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-700'
+                    ? 'bg-primary text-ink font-black' 
+                    : 'bg-gray-50 text-gray-800 dark:text-ink hover:bg-gray-200 dark:hover:bg-gray-700'
                 }`}
               >
                 <span className="flex items-center gap-1.5">
@@ -389,7 +411,7 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({
                 className={`w-full text-left px-2.5 py-1.5 text-xs font-bold neo-border-sm flex items-center justify-between transition-colors ${
                   showOverlay 
                     ? 'bg-[#FF3366] text-white font-black animate-pulse' 
-                    : 'bg-gray-50 dark:bg-[#27272A] text-gray-800 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-700'
+                    : 'bg-gray-50 dark:bg-surface-2 text-gray-800 dark:text-ink hover:bg-gray-200 dark:hover:bg-gray-700'
                 }`}
               >
                 <span className="flex items-center gap-1.5">
@@ -421,7 +443,10 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({
       {/* Grid Principal: se showSide for true, divide em colunas balanceadas para 16:9 e ultrawide 21:9 */}
       <div className={`grid gap-4 md:gap-6 ${showSide ? 'grid-cols-1 lg:grid-cols-12 items-start' : 'grid-cols-1'}`}>
         {/* Lado Esquerdo: Card da Questão */}
-        <div className={`bg-white dark:bg-[#18181B] neo-border neo-shadow-lg p-4 md:p-6 2xl:p-7 relative overflow-hidden ${showSide ? 'lg:col-span-6' : ''}`}>
+        <div
+          ref={highlightRootRef}
+          className={`bg-surface neo-border neo-shadow-lg p-4 md:p-6 2xl:p-7 relative overflow-hidden ${showSide ? 'lg:col-span-6' : ''} ${highlighter.enabled ? 'cursor-text' : ''}`}
+        >
           {/* MODO OVERLAY: Canvas de Mesa Digitalizadora Transparente Diretamente Sobre o Texto */}
           {showOverlay && (
             <div className="absolute inset-0 z-30 pointer-events-auto bg-transparent">
@@ -445,12 +470,12 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({
               </span>
 
               {question.edition && (
-                <span className="px-2 py-0.5 text-xs font-bold bg-gray-100 dark:bg-gray-800 neo-border-sm text-gray-800 dark:text-gray-200">
+                <span className="px-2 py-0.5 text-xs font-bold bg-gray-100 dark:bg-gray-800 neo-border-sm text-gray-800 dark:text-ink">
                   {question.edition}
                 </span>
               )}
 
-              <span className="px-2 py-0.5 text-xs font-extrabold bg-[#F5F2EA] dark:bg-gray-800 neo-border-sm text-black dark:text-white">
+              <span className="px-2 py-0.5 text-xs font-extrabold bg-surface-2 neo-border-sm text-ink">
                 {question.discipline}
               </span>
 
@@ -474,11 +499,43 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({
             </div>
 
             <div className="flex items-center gap-2">
+              {/* Marca-texto: selecione palavras com o mouse para destacá-las em amarelo */}
+              {highlighter.supported && (
+                <div className="flex items-center">
+                  <button
+                    type="button"
+                    onClick={highlighter.toggle}
+                    aria-pressed={highlighter.enabled}
+                    className={`flex items-center gap-1.5 text-[11px] font-black px-2.5 py-1 neo-border-sm transition-colors ${
+                      highlighter.enabled ? 'bg-primary text-ink' : 'bg-surface text-ink hover:bg-primary'
+                    }`}
+                    title={
+                      highlighter.enabled
+                        ? 'Marca-texto ligado: selecione um trecho para destacar; selecione sobre um destaque para remover (H)'
+                        : 'Ligar marca-texto (H)'
+                    }
+                  >
+                    <Highlighter className="w-3.5 h-3.5" />
+                    <span>{highlighter.enabled ? 'Marca-texto ligado' : 'Marca-texto'}</span>
+                  </button>
+                  {highlighter.count > 0 && (
+                    <button
+                      type="button"
+                      onClick={highlighter.clear}
+                      className="-ml-0.5 px-2 py-1 text-[11px] font-black neo-border-sm bg-surface text-ink hover:bg-gray-100 transition-colors"
+                      title="Remover todos os destaques"
+                    >
+                      Limpar ({highlighter.count})
+                    </button>
+                  )}
+                </div>
+              )}
+
               {/* Copiar enunciado + alternativas formatados */}
               <button
                 type="button"
                 onClick={handleCopyQuestion}
-                className="flex items-center gap-1.5 text-[11px] font-black bg-white dark:bg-[#27272A] px-2.5 py-1 neo-border-sm text-black dark:text-white hover:bg-[#FFE600] dark:hover:bg-[#FFE600] dark:hover:text-black"
+                className="flex items-center gap-1.5 text-[11px] font-black bg-surface px-2.5 py-1 neo-border-sm text-ink hover:bg-[#FFE600] dark:hover:bg-[#FFE600] dark:hover:text-black"
                 title="Copiar questão e alternativas"
               >
                 {copiedKind === 'question' ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
@@ -492,8 +549,8 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({
               </button>
 
               {/* Cronômetro com texto de cor clara no Modo Escuro */}
-              <div className="flex items-center gap-1.5 text-xs font-mono font-black bg-[#F8F5EE] dark:bg-[#27272A] px-2.5 py-1 neo-border-sm text-[#111111] dark:text-[#FFFFFF] border-black dark:border-gray-600 shadow-sm">
-                <Clock className="w-3.5 h-3.5 text-black dark:text-[#00F0FF]" />
+              <div className="flex items-center gap-1.5 text-xs font-mono font-black bg-page px-2.5 py-1 neo-border-sm text-[#111111] dark:text-[#FFFFFF] border-black shadow-sm">
+                <Clock className="w-3.5 h-3.5 text-ink dark:text-[#00F0FF]" />
                 <span className="text-[#111111] dark:text-[#FFFFFF]">{formatTimer(timeSpent)}</span>
               </div>
             </div>
@@ -503,7 +560,7 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({
           {question.contextSnippet && (
             <RichText
               text={question.contextSnippet}
-              className="selectable-text mb-4 p-3 bg-[#FBF8F1] dark:bg-[#202024] border-l-4 border-black dark:border-yellow-400 text-sm italic text-gray-800 dark:text-gray-200"
+              className="selectable-text mb-4 p-3 bg-[#FBF8F1] dark:bg-surface-2 border-l-4 border-black dark:border-yellow-400 text-sm italic text-gray-800 dark:text-ink"
             />
           )}
 
@@ -511,7 +568,7 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({
           {contextText && (
             <RichText
               text={contextText}
-              className="selectable-text text-base md:text-lg font-normal text-gray-800 dark:text-gray-200 leading-relaxed mb-4"
+              className="selectable-text text-base md:text-lg font-normal text-gray-800 dark:text-ink leading-relaxed mb-4"
             />
           )}
 
@@ -519,17 +576,17 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({
           {questionPrompt && (
             <RichText
               text={questionPrompt}
-              className="selectable-text text-base md:text-lg font-black text-black dark:text-white leading-relaxed mb-6 border-l-4 border-[#FFE600] pl-3 py-1.5 bg-[#FFFEEA]/60 dark:bg-[#27272A]"
+              className="selectable-text text-base md:text-lg font-black text-ink leading-relaxed mb-6 border-l-4 border-[#FFE600] pl-3 py-1.5 bg-[#FFFEEA]/60 dark:bg-surface-2"
             />
           )}
 
-          {/* Lista de Alternativas (A-E) com Eliminação por Clique Longo (1.5s) */}
+          {/* Lista de Alternativas (A-E) com Eliminação por Clique Longo (1s) */}
           <div className="space-y-3 mb-6">
             <div className="flex items-center justify-between text-xs font-mono text-gray-500 dark:text-gray-400 pb-1">
               <span>Alternativas</span>
               <span className="flex items-center gap-1 text-amber-700 dark:text-amber-400">
                 <Ban className="w-3 h-3" />
-                Segure 1,5 s para riscar
+                Segure 1 s para riscar
               </span>
             </div>
 
@@ -539,7 +596,7 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({
               const isEliminated = !!eliminatedOptions[alt.id];
               const isHolding = holdingAltId === alt.id;
 
-              let buttonStyle = 'bg-white text-black hover:bg-gray-50 dark:bg-[#202024] dark:text-white dark:hover:bg-[#27272A]';
+              let buttonStyle = 'bg-surface text-ink hover:bg-gray-50 dark:hover:bg-surface-2';
 
               if (hasSubmitted) {
                 if (isCorrectOption) {
@@ -550,27 +607,37 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({
                   buttonStyle = 'bg-gray-100 text-gray-400 opacity-60 dark:bg-gray-800 dark:text-gray-500';
                 }
               } else if (isSelected) {
-                buttonStyle = 'bg-[#FFE600] text-black font-extrabold translate-x-1 shadow-none';
+                buttonStyle = 'bg-primary text-ink font-extrabold translate-x-1 shadow-none';
               } else if (isEliminated) {
                 buttonStyle = 'bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500 opacity-50 line-through decoration-red-600 decoration-2';
               }
 
               return (
-                <button
+                <div
                   key={alt.id}
-                  type="button"
-                  disabled={hasSubmitted}
+                  role="button"
+                  tabIndex={hasSubmitted ? -1 : 0}
+                  aria-disabled={hasSubmitted}
+                  aria-pressed={isSelected}
+                  onKeyDown={(e) => {
+                    if (e.key === ' ') {
+                      e.preventDefault();
+                      handleClickAlt(alt.id);
+                    }
+                  }}
                   onPointerDown={() => handlePointerDownAlt(alt.id)}
                   onPointerUp={handlePointerUpAlt}
                   onPointerLeave={handlePointerUpAlt}
                   onClick={() => handleClickAlt(alt.id)}
-                  className={`w-full text-left p-3.5 neo-border neo-shadow-sm flex items-start gap-3 transition-all relative overflow-hidden select-none ${buttonStyle}`}
+                  className={`w-full text-left p-3.5 neo-border neo-shadow-sm flex items-start gap-3 transition-colors relative overflow-hidden ${
+                    highlighter.enabled && !hasSubmitted ? 'select-text cursor-text' : 'select-none'
+                  } ${hasSubmitted ? 'cursor-default' : highlighter.enabled ? '' : 'cursor-pointer'} ${buttonStyle}`}
                 >
-                  {/* Barra de progresso para o clique longo de 1.5s */}
+                  {/* Barra de progresso para o clique longo de 1s */}
                   {isHolding && (
                     <div 
-                      className="absolute bottom-0 left-0 h-1 bg-[#FF3366] transition-all duration-[1500ms] w-full z-10" 
-                      style={{ animation: 'progress 1.5s linear forwards' }}
+                      className="absolute bottom-0 left-0 h-1 bg-[#FF3366] w-full z-10 origin-left"
+                      style={{ animation: `hold-progress ${HOLD_TO_STRIKE_MS}ms linear forwards` }}
                     />
                   )}
 
@@ -584,6 +651,8 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({
                     as="span"
                     text={alt.text}
                     className={`text-sm md:text-base font-medium flex-1 min-w-0 pt-0.5 ${
+                      highlighter.enabled ? 'selectable-text' : ''
+                    } ${
                       isEliminated ? 'line-through decoration-red-600 decoration-2' : ''
                     }`}
                     imgClassName="max-h-60 2xl:max-h-96"
@@ -596,12 +665,12 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({
                   )}
 
                   {hasSubmitted && isCorrectOption && (
-                    <CheckCircle2 className="w-6 h-6 text-black flex-shrink-0" />
+                    <CheckCircle2 className="w-6 h-6 text-ink flex-shrink-0" />
                   )}
                   {hasSubmitted && isSelected && !isCorrectOption && (
                     <XCircle className="w-6 h-6 text-white flex-shrink-0" />
                   )}
-                </button>
+                </div>
               );
             })}
           </div>
@@ -613,13 +682,15 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({
                 type="button"
                 onClick={onPrevQuestion}
                 disabled={currentIndex <= 0}
-                className="px-3 py-2 text-xs font-bold neo-btn bg-white dark:bg-[#27272A] text-black dark:text-white disabled:opacity-30 flex items-center gap-1"
+                className="px-3 py-2 text-xs font-bold neo-btn bg-surface text-ink disabled:opacity-30 flex items-center gap-1"
+                title="Questão anterior (tecla W)"
               >
                 <ChevronLeft className="w-4 h-4" />
                 <span>Anterior</span>
+                <span className="text-[10px] font-mono text-gray-500 ml-0.5">[W]</span>
               </button>
 
-              <span className="text-xs font-bold font-mono px-2 text-gray-800 dark:text-gray-200">
+              <span className="text-xs font-bold font-mono px-2 text-gray-800 dark:text-ink">
                 {currentIndex + 1} de {totalCount}
               </span>
 
@@ -627,7 +698,7 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({
                 type="button"
                 onClick={onNextQuestion}
                 disabled={currentIndex >= totalCount - 1}
-                className="px-3 py-2 text-xs font-bold neo-btn bg-white dark:bg-[#27272A] text-black dark:text-white disabled:opacity-30 flex items-center gap-1"
+                className="px-3 py-2 text-xs font-bold neo-btn bg-surface text-ink disabled:opacity-30 flex items-center gap-1"
                 title="Próxima questão (tecla S)"
               >
                 <span>Próxima</span>
@@ -642,7 +713,7 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({
                   type="button"
                   onClick={handleSubmitAnswer}
                   disabled={!selectedOption}
-                  className="px-8 py-2.5 text-sm font-black neo-btn bg-[#FFE600] text-black disabled:opacity-40 flex items-center gap-2"
+                  className="px-8 py-2.5 text-sm font-black neo-btn bg-primary text-ink disabled:opacity-40 flex items-center gap-2"
                 >
                   <span>Confirmar</span>
                   <Sparkles className="w-4 h-4" />
@@ -651,7 +722,7 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({
                 <button
                   type="button"
                   onClick={() => setShowExplanation(!showExplanation)}
-                  className="px-4 py-2 text-xs font-black neo-btn bg-[#00F0FF] text-black flex items-center gap-1.5"
+                  className="px-4 py-2 text-xs font-black neo-btn bg-secondary text-ink flex items-center gap-1.5"
                 >
                   <Lightbulb className="w-4 h-4" />
                   <span>{showExplanation ? 'Ocultar resolução' : 'Ver resolução'}</span>
@@ -662,14 +733,14 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({
 
           {/* REPETIÇÃO ESPAÇADA (SRS): SELETOR DE FACILIDADE APÓS RESPONDER */}
           {hasSubmitted && (
-            <div className="mt-5 p-4 bg-[#F5F2EA] dark:bg-[#202024] neo-border">
+            <div className="mt-5 p-4 bg-surface-2 neo-border">
               <div className="flex items-center gap-2 mb-2">
                 <Brain className="w-4 h-4 text-purple-700 dark:text-purple-400" />
-                <span className="text-sm font-black uppercase tracking-wider text-black dark:text-white">
+                <span className="text-sm font-black uppercase tracking-wider text-ink">
                   Como foi essa questão?
                 </span>
               </div>
-              <p className="text-xs text-gray-700 dark:text-gray-300 mb-3">
+              <p className="text-xs text-gray-700 dark:text-ink-muted mb-3">
                 Sua resposta define quando a questão volta para revisão.
               </p>
 
@@ -677,10 +748,10 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({
                 <button
                   type="button"
                   onClick={() => handleSrsRate('ERRO')}
-                  className={`p-2 text-xs font-black neo-border-sm transition-all ${
+                  className={`p-2 text-xs font-black neo-border-sm transition-colors ${
                     selectedSrsRating === 'ERRO'
                       ? 'bg-[#FF3366] text-white ring-2 ring-black dark:ring-white'
-                      : 'bg-white dark:bg-[#27272A] text-red-700 dark:text-red-400 hover:bg-red-50'
+                      : 'bg-surface text-red-700 dark:text-red-400 hover:bg-red-50'
                   }`}
                 >
                   Errei (+1 dia)
@@ -689,10 +760,10 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({
                 <button
                   type="button"
                   onClick={() => handleSrsRate('DIFICIL')}
-                  className={`p-2 text-xs font-black neo-border-sm transition-all ${
+                  className={`p-2 text-xs font-black neo-border-sm transition-colors ${
                     selectedSrsRating === 'DIFICIL'
                       ? 'bg-[#FF8800] text-white ring-2 ring-black dark:ring-white'
-                      : 'bg-white dark:bg-[#27272A] text-orange-700 dark:text-orange-400 hover:bg-orange-50'
+                      : 'bg-surface text-orange-700 dark:text-orange-400 hover:bg-orange-50'
                   }`}
                 >
                   Difícil (+1 dia)
@@ -701,10 +772,10 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({
                 <button
                   type="button"
                   onClick={() => handleSrsRate('BOM')}
-                  className={`p-2 text-xs font-black neo-border-sm transition-all ${
+                  className={`p-2 text-xs font-black neo-border-sm transition-colors ${
                     selectedSrsRating === 'BOM'
-                      ? 'bg-[#FFE600] text-black ring-2 ring-black dark:ring-white'
-                      : 'bg-white dark:bg-[#27272A] text-gray-900 dark:text-gray-200 hover:bg-yellow-50'
+                      ? 'bg-primary text-ink ring-2 ring-black dark:ring-white'
+                      : 'bg-surface text-gray-900 dark:text-ink hover:bg-yellow-50'
                   }`}
                 >
                   Bom (+3 dias)
@@ -713,10 +784,10 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({
                 <button
                   type="button"
                   onClick={() => handleSrsRate('FACIL')}
-                  className={`p-2 text-xs font-black neo-border-sm transition-all ${
+                  className={`p-2 text-xs font-black neo-border-sm transition-colors ${
                     selectedSrsRating === 'FACIL'
                       ? 'bg-[#00E599] text-black ring-2 ring-black dark:ring-white'
-                      : 'bg-white dark:bg-[#27272A] text-green-800 dark:text-green-300 hover:bg-green-50'
+                      : 'bg-surface text-green-800 dark:text-green-300 hover:bg-green-50'
                   }`}
                 >
                   Fácil (+6 dias)
@@ -736,7 +807,7 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({
           {hasSubmitted && showExplanation && (
             <div
               className={`mt-4 p-4 neo-border ${
-                isCorrect ? 'bg-[#E6FAF2] dark:bg-green-950/40 border-green-800' : 'bg-[#FFF0F3] dark:bg-red-950/40 border-red-800'
+                isCorrect ? 'bg-[#E6FAF2] dark:bg-green-950/40 border-green-800' : 'bg-[#FFF0F3] dark:bg-surface-2 dark:bg-red-950/40 border-red-800'
               }`}
             >
               <div className="flex items-center gap-2 mb-2">
@@ -759,7 +830,7 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({
 
               <div className="mt-3 pt-3 border-t-2 border-black/20 dark:border-gray-700">
                 <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
-                  <h4 className="text-sm font-black uppercase tracking-wider text-gray-800 dark:text-gray-200 flex items-center gap-1.5">
+                  <h4 className="text-sm font-black uppercase tracking-wider text-gray-800 dark:text-ink flex items-center gap-1.5">
                     <Lightbulb className="w-4 h-4 text-amber-500" />
                     Resolução
                   </h4>
@@ -770,7 +841,7 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({
                         <button
                           type="button"
                           onClick={handleCopyResolution}
-                          className="flex items-center gap-1 text-[10px] font-black bg-white dark:bg-[#27272A] px-2 py-1 neo-border-sm text-black dark:text-white hover:bg-[#FFE600] dark:hover:bg-[#FFE600] dark:hover:text-black"
+                          className="flex items-center gap-1 text-[10px] font-black bg-surface px-2 py-1 neo-border-sm text-ink hover:bg-[#FFE600] dark:hover:bg-[#FFE600] dark:hover:text-black"
                           title="Copiar gabarito e resolução"
                         >
                           {copiedKind === 'resolution' ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
@@ -780,7 +851,7 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({
                       <button
                         type="button"
                         onClick={handleStartEditExplanation}
-                        className="flex items-center gap-1 text-[10px] font-black bg-white dark:bg-[#27272A] px-2 py-1 neo-border-sm text-black dark:text-white hover:bg-[#00F0FF] dark:hover:bg-[#00F0FF] dark:hover:text-black"
+                        className="flex items-center gap-1 text-[10px] font-black bg-surface px-2 py-1 neo-border-sm text-ink hover:bg-[#00F0FF] dark:hover:bg-[#00F0FF] dark:hover:text-black"
                         title={hasExplanation ? 'Editar resolução' : 'Adicionar resolução'}
                       >
                         <Pencil className="w-3 h-3" />
@@ -798,7 +869,7 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({
                       autoFocus
                       rows={8}
                       placeholder="Digite ou cole a resolução. Cada linha vira um parágrafo."
-                      className="selectable-text w-full text-sm font-sans leading-relaxed p-3 neo-border-sm bg-white text-black resize-y"
+                      className="selectable-text w-full text-sm font-sans leading-relaxed p-3 neo-border-sm bg-surface text-ink resize-y"
                     />
                     {explanationSaveFailed && (
                       <p className="text-[11px] font-bold text-red-700 dark:text-red-400">
@@ -812,7 +883,7 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({
                           setIsEditingExplanation(false);
                           setExplanationSaveFailed(false);
                         }}
-                        className="px-3 py-1.5 text-[11px] font-black neo-btn bg-white dark:bg-[#27272A] text-black dark:text-white"
+                        className="px-3 py-1.5 text-[11px] font-black neo-btn bg-surface text-ink"
                       >
                         Cancelar
                       </button>
@@ -829,10 +900,10 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({
                 ) : hasExplanation ? (
                   <RichText
                     text={question.explanation}
-                    className="selectable-text text-sm text-gray-800 dark:text-gray-200 font-sans leading-relaxed bg-white dark:bg-[#1E1E22] p-3 neo-border-sm"
+                    className="selectable-text text-sm text-gray-800 dark:text-ink font-sans leading-relaxed bg-surface p-3 neo-border-sm"
                   />
                 ) : (
-                  <p className="text-sm italic text-gray-700 dark:text-gray-300 bg-white dark:bg-[#1E1E22] p-3 neo-border-sm">
+                  <p className="text-sm italic text-gray-700 dark:text-ink-muted bg-surface p-3 neo-border-sm">
                     Esta questão ainda não tem resolução.
                   </p>
                 )}
@@ -888,3 +959,5 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({
     </div>
   );
 };
+
+export const QuestionCard = React.memo(QuestionCardComponent);

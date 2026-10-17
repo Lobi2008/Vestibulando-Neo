@@ -73,16 +73,16 @@ export const SpacedRepetitionDeck: React.FC<SpacedRepetitionDeckProps> = ({
   return (
     <div className="space-y-6 max-w-5xl mx-auto">
       {/* Banner SRS */}
-      <div className="bg-[#00F0FF] neo-border neo-shadow-lg p-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="bg-secondary neo-border neo-shadow-lg p-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <div className="inline-flex items-center gap-1.5 bg-black text-white px-2.5 py-1 text-xs font-black uppercase mb-2">
             <Brain className="w-4 h-4 text-[#00F0FF]" />
             <span>Método SM-2</span>
           </div>
-          <h2 className="text-2xl md:text-3xl font-black text-black tracking-tight">
+          <h2 className="text-2xl md:text-3xl font-black text-ink tracking-tight">
             Revisão espaçada
           </h2>
-          <p className="text-sm font-bold text-gray-900 mt-1 max-w-md">
+          <p className="text-sm font-bold text-gray-900 dark:text-ink mt-1 max-w-md">
             Depois de resolver uma questão, você avalia como foi e o app agenda a próxima revisão.
           </p>
         </div>
@@ -92,7 +92,7 @@ export const SpacedRepetitionDeck: React.FC<SpacedRepetitionDeckProps> = ({
             type="button"
             disabled={dueItems.length === 0}
             onClick={handleStartReviewAllDue}
-            className="px-6 py-3.5 bg-[#FFE600] text-black font-black text-sm neo-btn flex items-center gap-2 disabled:opacity-40"
+            className="px-6 py-3.5 bg-primary text-ink font-black text-sm neo-btn flex items-center gap-2 disabled:opacity-40"
           >
             <Play className="w-4 h-4 fill-black" />
             <span>Revisar hoje ({dueItems.length})</span>
@@ -102,34 +102,34 @@ export const SpacedRepetitionDeck: React.FC<SpacedRepetitionDeckProps> = ({
 
       {/* Cards de Métricas do Deck */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="bg-white neo-border neo-shadow p-4">
-          <div className="text-xs font-black text-gray-600 uppercase flex items-center justify-between mb-1">
+        <div className="bg-surface neo-border neo-shadow p-4">
+          <div className="text-xs font-black text-gray-600 dark:text-ink-muted uppercase flex items-center justify-between mb-1">
             <span>Para revisar hoje</span>
             <AlertCircle className="w-4 h-4 text-[#FF3366]" />
           </div>
-          <div className="text-3xl font-black text-black">{dueItems.length}</div>
+          <div className="text-3xl font-black text-ink">{dueItems.length}</div>
           <div className="text-xs text-gray-500 font-bold mt-1">
             {dueItems.length > 0 ? 'Revise para fixar o conteúdo' : 'Tudo em dia!'}
           </div>
         </div>
 
-        <div className="bg-white neo-border neo-shadow p-4">
-          <div className="text-xs font-black text-gray-600 uppercase flex items-center justify-between mb-1">
+        <div className="bg-surface neo-border neo-shadow p-4">
+          <div className="text-xs font-black text-gray-600 dark:text-ink-muted uppercase flex items-center justify-between mb-1">
             <span>Total agendado</span>
             <Layers className="w-4 h-4 text-[#3B82F6]" />
           </div>
-          <div className="text-3xl font-black text-black">{registeredList.length}</div>
+          <div className="text-3xl font-black text-ink">{registeredList.length}</div>
           <div className="text-xs text-gray-500 font-bold mt-1">
             Questões na revisão
           </div>
         </div>
 
-        <div className="bg-white neo-border neo-shadow p-4">
-          <div className="text-xs font-black text-gray-600 uppercase flex items-center justify-between mb-1">
+        <div className="bg-surface neo-border neo-shadow p-4">
+          <div className="text-xs font-black text-gray-600 dark:text-ink-muted uppercase flex items-center justify-between mb-1">
             <span>Intervalo Médio</span>
             <Clock className="w-4 h-4 text-[#00E599]" />
           </div>
-          <div className="text-3xl font-black text-black">
+          <div className="text-3xl font-black text-ink">
             {registeredList.length > 0
               ? `${Math.round(
                   registeredList.reduce((acc, curr) => acc + curr.intervalDays, 0) /
@@ -144,10 +144,10 @@ export const SpacedRepetitionDeck: React.FC<SpacedRepetitionDeckProps> = ({
       </div>
 
       {/* Tabela de Itens Agendados */}
-      <div className="bg-white neo-border neo-shadow p-5">
+      <div className="bg-surface neo-border neo-shadow p-5">
         <div className="flex flex-wrap items-center justify-between gap-3 pb-3 mb-4 border-b-2 border-black">
           <div className="flex items-center gap-2">
-            <span className="text-base font-black uppercase text-black">
+            <span className="text-base font-black uppercase text-ink">
               Cronograma
             </span>
             <span className="text-xs font-mono font-bold bg-black text-white px-2 py-0.5">
@@ -159,8 +159,8 @@ export const SpacedRepetitionDeck: React.FC<SpacedRepetitionDeckProps> = ({
             <button
               type="button"
               onClick={() => setFilterType('DUE')}
-              className={`px-3.5 py-1.5 text-xs font-black neo-border-sm transition-all ${
-                filterType === 'DUE' ? 'bg-[#FFE600] text-black' : 'bg-gray-100 text-gray-700'
+              className={`px-3.5 py-1.5 text-xs font-black neo-border-sm transition-colors ${
+                filterType === 'DUE' ? 'bg-primary text-ink' : 'bg-gray-100 text-gray-700 dark:text-ink-muted'
               }`}
             >
               Hoje ({dueItems.length})
@@ -168,8 +168,8 @@ export const SpacedRepetitionDeck: React.FC<SpacedRepetitionDeckProps> = ({
             <button
               type="button"
               onClick={() => setFilterType('ALL')}
-              className={`px-3.5 py-1.5 text-xs font-black neo-border-sm transition-all ${
-                filterType === 'ALL' ? 'bg-black text-white' : 'bg-gray-100 text-gray-700'
+              className={`px-3.5 py-1.5 text-xs font-black neo-border-sm transition-colors ${
+                filterType === 'ALL' ? 'bg-black text-white' : 'bg-gray-100 text-gray-700 dark:text-ink-muted'
               }`}
             >
               Todas ({registeredList.length})
@@ -180,7 +180,7 @@ export const SpacedRepetitionDeck: React.FC<SpacedRepetitionDeckProps> = ({
         {displayedList.length === 0 ? (
           <div className="text-center py-12 text-gray-500 space-y-2">
             <Brain className="w-10 h-10 text-gray-400 mx-auto" />
-            <p className="text-sm font-bold text-gray-700">
+            <p className="text-sm font-bold text-gray-700 dark:text-ink-muted">
               {filterType === 'DUE'
                 ? 'Nenhuma revisão para hoje.'
                 : 'Você ainda não tem questões na revisão.'}
@@ -197,7 +197,7 @@ export const SpacedRepetitionDeck: React.FC<SpacedRepetitionDeckProps> = ({
                 <div
                   key={item.questionId}
                   className={`p-3.5 neo-border-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3 ${
-                    item.isDue ? 'bg-[#FFFDE7] border-l-4 border-l-[#FF5A36]' : 'bg-[#FAFAFA]'
+                    item.isDue ? 'bg-[#FFFDE7] dark:bg-surface-2 border-l-4 border-l-[#FF5A36]' : 'bg-[#FAFAFA] dark:bg-surface-2'
                   }`}
                 >
                   <div className="space-y-1 max-w-xl">
@@ -213,14 +213,14 @@ export const SpacedRepetitionDeck: React.FC<SpacedRepetitionDeckProps> = ({
                         </span>
                       )}
                     </div>
-                    <p className="text-xs font-semibold text-gray-800 line-clamp-2">
+                    <p className="text-xs font-semibold text-gray-800 dark:text-ink line-clamp-2">
                       {richTextToPlain(q.statement)}
                     </p>
                   </div>
 
                   <div className="flex items-center justify-between sm:justify-end gap-3 pt-2 sm:pt-0 border-t sm:border-t-0 border-gray-200">
                     <div className="text-right text-[11px] font-mono">
-                      <div className="font-bold text-gray-800">
+                      <div className="font-bold text-gray-800 dark:text-ink">
                         Próxima: <strong>{item.nextReviewDate}</strong>
                       </div>
                       <div className="text-gray-500">
@@ -231,7 +231,7 @@ export const SpacedRepetitionDeck: React.FC<SpacedRepetitionDeckProps> = ({
                     <button
                       type="button"
                       onClick={() => onStartReviewQuestion(item.questionId)}
-                      className="px-3 py-1.5 text-xs font-black neo-btn bg-[#FFE600] text-black flex items-center gap-1"
+                      className="px-3 py-1.5 text-xs font-black neo-btn bg-primary text-ink flex items-center gap-1"
                     >
                       <span>Revisar</span>
                       <ArrowRight className="w-3.5 h-3.5" />

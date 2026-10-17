@@ -41,6 +41,7 @@ const LIGHT_PEN_COLORS = [
   { name: 'Azul', hex: '#0055FF' },
   { name: 'Vermelho', hex: '#FF0033' },
   { name: 'Verde', hex: '#00AA44' },
+  { name: 'Roxo', hex: '#7C3AED' },
 ];
 
 const DARK_PEN_COLORS = [
@@ -90,7 +91,7 @@ export const DigitalPenCanvas: React.FC<DigitalPenCanvasProps> = ({
   const [selectedColor, setSelectedColor] = useState<string>(effectiveDark ? '#FFFFFF' : '#111111');
   const [highlighterColor, setHighlighterColor] = useState<string>('#FFE600');
   const [baseWidth, setBaseWidth] = useState<number>(3);
-  const [stabilizerLevel, setStabilizerLevel] = useState<'off' | 'medium' | 'high'>('medium');
+  const [stabilizerLevel, setStabilizerLevel] = useState<'off' | 'medium' | 'high'>('off');
   const [paperPattern, setPaperPattern] = useState<'grid' | 'lined' | 'blank'>('grid');
   const [isExpanded, setIsExpanded] = useState<boolean>(false);
   const [stylusPressure, setStylusPressure] = useState<number>(0);
@@ -102,6 +103,8 @@ export const DigitalPenCanvas: React.FC<DigitalPenCanvasProps> = ({
   const [redoStack, setRedoStack] = useState<DrawingStroke[]>([]);
   const isDrawingRef = useRef<boolean>(false);
   const currentPointsRef = useRef<StylusPoint[]>([]);
+  // Linha reta: ativada ao pressionar o canvas com Ctrl; guarda só início e fim
+  const isStraightLineRef = useRef<boolean>(false);
 
   // Sincroniza cor da caneta quando o modo escuro/claro alterna
   useEffect(() => {
@@ -279,6 +282,7 @@ export const DigitalPenCanvas: React.FC<DigitalPenCanvasProps> = ({
     };
 
     currentPointsRef.current = [initialPoint];
+    isStraightLineRef.current = e.ctrlKey;
   };
 
   const handlePointerMove = (e: React.PointerEvent<HTMLCanvasElement>) => {
@@ -296,6 +300,21 @@ export const DigitalPenCanvas: React.FC<DigitalPenCanvasProps> = ({
       pressure: rawPressure,
       time: Date.now(),
     };
+
+    // Ctrl pressionado no início: pré-visualiza uma linha reta do ponto inicial até o cursor
+    if (isStraightLineRef.current) {
+      const start = currentPointsRef.current[0];
+      currentPointsRef.current = [start, rawPoint];
+      const preview: DrawingStroke = {
+        id: 'preview-straight-line',
+        tool: activeTool,
+        color: activeTool === 'highlighter' ? highlighterColor : selectedColor,
+        width: baseWidth,
+        points: currentPointsRef.current,
+      };
+      renderStrokes(canvas, [...strokes, preview], effectiveDark);
+      return;
+    }
 
     const smoothed = filterPointWithStabilizer(rawPoint, currentPointsRef.current);
     currentPointsRef.current.push(smoothed);
@@ -364,6 +383,7 @@ export const DigitalPenCanvas: React.FC<DigitalPenCanvasProps> = ({
     }
 
     currentPointsRef.current = [];
+    isStraightLineRef.current = false;
   };
 
   // Undo / Redo
@@ -438,10 +458,10 @@ export const DigitalPenCanvas: React.FC<DigitalPenCanvasProps> = ({
           ? 'bg-lined-pattern-dark bg-[#18181B]'
           : 'bg-[#18181B]'
         : paperPattern === 'grid'
-        ? 'bg-grid-pattern bg-[#FEFDF9]'
+        ? 'bg-grid-pattern bg-[#FEFDF9] dark:bg-surface-2'
         : paperPattern === 'lined'
-        ? 'bg-lined-pattern bg-[#FEFDF9]'
-        : 'bg-[#FFFFFF]'
+        ? 'bg-lined-pattern bg-[#FEFDF9] dark:bg-surface-2'
+        : 'bg-[#FFFFFF] dark:bg-surface-2'
       : 'bg-transparent';
 
   return (
@@ -450,8 +470,8 @@ export const DigitalPenCanvas: React.FC<DigitalPenCanvasProps> = ({
       className={`flex flex-col ${
         mode === 'overlay'
           ? 'bg-transparent border-3 border-dashed border-[#FF3366]'
-          : 'neo-border bg-[#F5F2EA] dark:bg-[#1E1E24]'
-      } transition-all duration-150 ${
+          : 'neo-border bg-surface-2 '
+      } transition-colors duration-150 ${
         isExpanded ? 'fixed inset-4 z-50 shadow-2xl' : 'relative'
       } ${className}`}
     >
@@ -460,7 +480,7 @@ export const DigitalPenCanvas: React.FC<DigitalPenCanvasProps> = ({
         className={`flex flex-wrap items-center justify-between gap-2 px-3 py-2 ${
           mode === 'overlay'
             ? 'bg-[#FF3366] text-white'
-            : 'bg-[#FFE600] dark:bg-[#27272A] text-black dark:text-white'
+            : 'bg-primary text-black dark:text-white'
         } border-b-3 border-[#111111] dark:border-gray-700`}
       >
         {mode === 'overlay' && (
@@ -474,10 +494,10 @@ export const DigitalPenCanvas: React.FC<DigitalPenCanvasProps> = ({
           <button
             type="button"
             onClick={() => setActiveTool('pen')}
-            className={`p-1.5 flex items-center gap-1 text-xs font-bold neo-border-sm transition-all ${
+            className={`p-1.5 flex items-center gap-1 text-xs font-bold neo-border-sm transition-colors ${
               activeTool === 'pen'
                 ? 'bg-[#111111] text-white dark:bg-[#00F0FF] dark:text-black shadow-none'
-                : 'bg-white text-black hover:bg-yellow-100 dark:bg-[#18181B] dark:text-white dark:hover:bg-gray-700'
+                : 'bg-surface text-ink hover:bg-yellow-100 dark:hover:bg-gray-700'
             }`}
             title="Caneta"
           >
@@ -488,10 +508,10 @@ export const DigitalPenCanvas: React.FC<DigitalPenCanvasProps> = ({
           <button
             type="button"
             onClick={() => setActiveTool('highlighter')}
-            className={`p-1.5 flex items-center gap-1 text-xs font-bold neo-border-sm transition-all ${
+            className={`p-1.5 flex items-center gap-1 text-xs font-bold neo-border-sm transition-colors ${
               activeTool === 'highlighter'
                 ? 'bg-[#111111] text-white dark:bg-[#00F0FF] dark:text-black shadow-none'
-                : 'bg-white text-black hover:bg-yellow-100 dark:bg-[#18181B] dark:text-white dark:hover:bg-gray-700'
+                : 'bg-surface text-ink hover:bg-yellow-100 dark:hover:bg-gray-700'
             }`}
             title="Marca-texto"
           >
@@ -502,10 +522,10 @@ export const DigitalPenCanvas: React.FC<DigitalPenCanvasProps> = ({
           <button
             type="button"
             onClick={() => setActiveTool('eraser')}
-            className={`p-1.5 flex items-center gap-1 text-xs font-bold neo-border-sm transition-all ${
+            className={`p-1.5 flex items-center gap-1 text-xs font-bold neo-border-sm transition-colors ${
               activeTool === 'eraser'
                 ? 'bg-[#111111] text-white dark:bg-[#00F0FF] dark:text-black shadow-none'
-                : 'bg-white text-black hover:bg-yellow-100 dark:bg-[#18181B] dark:text-white dark:hover:bg-gray-700'
+                : 'bg-surface text-ink hover:bg-yellow-100 dark:hover:bg-gray-700'
             }`}
             title="Borracha"
           >
@@ -515,7 +535,7 @@ export const DigitalPenCanvas: React.FC<DigitalPenCanvasProps> = ({
         </div>
 
         {/* Paleta de Cores Rápida */}
-        <div className="flex items-center gap-1.5 bg-white dark:bg-[#18181B] px-2 py-1 neo-border-sm">
+        <div className="flex items-center gap-1.5 bg-surface px-2 py-1 neo-border-sm">
           {activeTool === 'highlighter' ? (
             HIGHLIGHTER_COLORS.map((col) => (
               <button
@@ -548,8 +568,8 @@ export const DigitalPenCanvas: React.FC<DigitalPenCanvasProps> = ({
         {/* Espessura, Papel e Estabilizador */}
         <div className="flex items-center gap-2">
           {/* Espessura */}
-          <div className="flex items-center gap-1 text-xs font-bold bg-white dark:bg-[#18181B] px-1.5 py-0.5 neo-border-sm">
-            <span className="text-[10px] text-gray-600 dark:text-gray-400">Traço:</span>
+          <div className="flex items-center gap-1 text-xs font-bold bg-surface px-1.5 py-0.5 neo-border-sm">
+            <span className="text-[10px] text-gray-600 dark:text-ink-muted">Traço:</span>
             <input
               type="range"
               min="1"
@@ -559,7 +579,7 @@ export const DigitalPenCanvas: React.FC<DigitalPenCanvasProps> = ({
               className="w-14 accent-black dark:accent-[#00F0FF] cursor-pointer"
               title={`Espessura: ${baseWidth}px`}
             />
-            <span className="text-[10px] font-mono text-black dark:text-white">{baseWidth}px</span>
+            <span className="text-[10px] font-mono text-ink">{baseWidth}px</span>
           </div>
 
           {/* Estabilizador Anti-Tremor */}
@@ -573,7 +593,7 @@ export const DigitalPenCanvas: React.FC<DigitalPenCanvasProps> = ({
             className={`px-2 py-1 text-[11px] font-bold neo-border-sm flex items-center gap-1 ${
               stabilizerLevel !== 'off'
                 ? 'bg-[#00E599] text-black'
-                : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
+                : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-ink-muted '
             }`}
             title="Estabilizador de traço (reduz tremores)"
           >
@@ -591,7 +611,7 @@ export const DigitalPenCanvas: React.FC<DigitalPenCanvasProps> = ({
                   prev === 'grid' ? 'lined' : prev === 'lined' ? 'blank' : 'grid'
                 )
               }
-              className="px-2 py-1 text-[11px] font-bold bg-white dark:bg-[#18181B] text-black dark:text-white neo-border-sm flex items-center gap-1 hover:bg-gray-100 dark:hover:bg-gray-700"
+              className="px-2 py-1 text-[11px] font-bold bg-surface text-ink neo-border-sm flex items-center gap-1 hover:bg-gray-100 dark:hover:bg-gray-700"
               title="Trocar papel"
             >
               <Grid className="w-3 h-3" />
@@ -606,13 +626,13 @@ export const DigitalPenCanvas: React.FC<DigitalPenCanvasProps> = ({
             className={`px-2 py-1 text-xs font-black neo-border-sm flex items-center gap-1 transition-transform ${
               savedFeedback 
                 ? 'bg-[#00E599] text-black scale-105' 
-                : 'bg-white dark:bg-[#18181B] text-black dark:text-white hover:bg-green-100 dark:hover:bg-green-950'
+                : 'bg-surface text-black dark:text-white hover:bg-green-100 dark:hover:bg-green-950'
             }`}
             title="Salvar rascunho"
           >
             {savedFeedback ? (
               <>
-                <Check className="w-3.5 h-3.5 stroke-[3] text-black" />
+                <Check className="w-3.5 h-3.5 stroke-[3] text-ink" />
                 <span>Salvo!</span>
               </>
             ) : (
@@ -629,19 +649,19 @@ export const DigitalPenCanvas: React.FC<DigitalPenCanvasProps> = ({
               type="button"
               onClick={handleUndo}
               disabled={strokes.length === 0}
-              className="p-1.5 bg-white dark:bg-[#18181B] neo-border-sm disabled:opacity-40 hover:bg-gray-100 dark:hover:bg-gray-700"
+              className="p-1.5 bg-surface neo-border-sm disabled:opacity-40 hover:bg-gray-100 dark:hover:bg-gray-700"
               title="Desfazer (Ctrl+Z)"
             >
-              <RotateCcw className="w-3.5 h-3.5 text-black dark:text-white" />
+              <RotateCcw className="w-3.5 h-3.5 text-ink" />
             </button>
             <button
               type="button"
               onClick={handleRedo}
               disabled={redoStack.length === 0}
-              className="p-1.5 bg-white dark:bg-[#18181B] neo-border-sm disabled:opacity-40 hover:bg-gray-100 dark:hover:bg-gray-700"
+              className="p-1.5 bg-surface neo-border-sm disabled:opacity-40 hover:bg-gray-100 dark:hover:bg-gray-700"
               title="Refazer (Ctrl+Y)"
             >
-              <RotateCw className="w-3.5 h-3.5 text-black dark:text-white" />
+              <RotateCw className="w-3.5 h-3.5 text-ink" />
             </button>
             <button
               type="button"
@@ -657,10 +677,10 @@ export const DigitalPenCanvas: React.FC<DigitalPenCanvasProps> = ({
             <button
               type="button"
               onClick={() => setIsExpanded(!isExpanded)}
-              className="p-1.5 bg-white dark:bg-[#18181B] neo-border-sm hover:bg-gray-100 dark:hover:bg-gray-700 ml-1"
+              className="p-1.5 bg-surface neo-border-sm hover:bg-gray-100 dark:hover:bg-gray-700 ml-1"
               title={isExpanded ? 'Restaurar' : 'Maximizar'}
             >
-              {isExpanded ? <Minimize2 className="w-3.5 h-3.5 text-black dark:text-white" /> : <Maximize2 className="w-3.5 h-3.5 text-black dark:text-white" />}
+              {isExpanded ? <Minimize2 className="w-3.5 h-3.5 text-ink" /> : <Maximize2 className="w-3.5 h-3.5 text-ink" />}
             </button>
 
             {onClose && (
@@ -678,7 +698,7 @@ export const DigitalPenCanvas: React.FC<DigitalPenCanvasProps> = ({
       </div>
 
       {/* Indicador de Status da Caneta / Mesa Digitalizadora */}
-      <div className="flex items-center justify-between px-3 py-1 bg-white dark:bg-[#18181B] border-b-2 border-black dark:border-gray-700 text-[11px] font-mono text-gray-600 dark:text-gray-400">
+      <div className="flex items-center justify-between px-3 py-1 bg-surface border-b-2 border-black dark:border-gray-700 text-[11px] font-mono text-gray-600 dark:text-ink-muted">
         <div className="flex items-center gap-2">
           <span className="flex items-center gap-1">
             <span
@@ -689,13 +709,13 @@ export const DigitalPenCanvas: React.FC<DigitalPenCanvasProps> = ({
             {isPenDetected ? 'Caneta detectada' : 'Mouse ou caneta'}
           </span>
           {isPenDetected && (
-            <span className="bg-yellow-100 dark:bg-yellow-950 px-1 border border-black dark:border-yellow-700 text-black dark:text-yellow-300">
+            <span className="bg-yellow-100 dark:bg-yellow-950 px-1 border border-black dark:border-yellow-700 text-ink dark:text-yellow-300">
               Pressão: {Math.round(stylusPressure * 100)}%
             </span>
           )}
         </div>
         <div className="flex items-center gap-3">
-          <span className="text-black dark:text-gray-300 font-bold">{strokes.length} traços salvos</span>
+          <span className="text-ink font-bold">{strokes.length} traços salvos</span>
           <span>Questão: {questionId}</span>
         </div>
       </div>
@@ -714,7 +734,7 @@ export const DigitalPenCanvas: React.FC<DigitalPenCanvasProps> = ({
         {strokes.length === 0 && mode === 'scratchpad' && (
           <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none opacity-40 select-none">
             <Sparkles className="w-8 h-8 mb-2 text-gray-500 dark:text-gray-300" />
-            <p className="text-sm font-bold text-gray-700 dark:text-gray-300">Espaço para cálculos e anotações</p>
+            <p className="text-sm font-bold text-gray-700 dark:text-ink-muted">Espaço para cálculos e anotações</p>
             <p className="text-xs text-gray-500 dark:text-gray-400">Desenhe com a caneta ou o mouse</p>
           </div>
         )}

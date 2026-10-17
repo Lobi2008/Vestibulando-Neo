@@ -7,9 +7,10 @@
  * Além de busca textual e filtro de status de resolução (não resolvidas, certas, erros).
  */
 
-import React, { useMemo, useState } from 'react';
+import React, { memo, useCallback, useEffect, useMemo, useState } from 'react';
 import { Filter, Search, RotateCcw, CheckCircle2, XCircle, HelpCircle, Layers, ChevronUp, ChevronDown } from 'lucide-react';
 import type { FilterState, ExamType, AreaOfKnowledge, Question } from '../../types/index.ts';
+import { useDebouncedValue } from '../../hooks/useDebouncedValue.ts';
 
 interface TaxonomyFilterBarProps {
   questions: Question[];
@@ -19,12 +20,12 @@ interface TaxonomyFilterBarProps {
   filteredCount: number;
 }
 
-const EXAM_OPTIONS: Array<{ value: ExamType | 'TODOS'; label: string; color: string }> = [
-  { value: 'TODOS', label: 'Todos os Vestibulares', color: 'bg-white' },
-  { value: 'ENEM', label: 'ENEM', color: 'bg-[#FFE600]' },
-  { value: 'UERJ', label: 'UERJ', color: 'bg-[#00F0FF]' },
-  { value: 'FUVEST', label: 'FUVEST', color: 'bg-[#FF5A36]' },
-  { value: 'UNICAMP', label: 'UNICAMP', color: 'bg-[#00E599]' },
+const EXAM_OPTIONS: Array<{ value: ExamType | 'TODOS'; label: string }> = [
+  { value: 'TODOS', label: 'Todos os Vestibulares' },
+  { value: 'ENEM', label: 'ENEM' },
+  { value: 'UERJ', label: 'UERJ' },
+  { value: 'FUVEST', label: 'FUVEST' },
+  { value: 'UNICAMP', label: 'UNICAMP' },
 ];
 
 const AREA_OPTIONS: Array<{ value: AreaOfKnowledge | 'TODAS'; label: string }> = [
@@ -35,7 +36,7 @@ const AREA_OPTIONS: Array<{ value: AreaOfKnowledge | 'TODAS'; label: string }> =
   { value: 'Linguagens, Códigos e suas Tecnologias', label: 'Linguagens' },
 ];
 
-export const TaxonomyFilterBar: React.FC<TaxonomyFilterBarProps> = ({
+const TaxonomyFilterBarComponent: React.FC<TaxonomyFilterBarProps> = ({
   questions,
   filters,
   onFilterChange,
@@ -63,12 +64,68 @@ export const TaxonomyFilterBar: React.FC<TaxonomyFilterBarProps> = ({
 
   const [isCollapsed, setIsCollapsed] = useState<boolean>(true);
 
+  // Busca: o input é controlado por estado local (digitação instantânea) e só
+  // propaga ao pai após o debounce, evitando refiltrar a lista a cada tecla.
+  const [searchText, setSearchText] = useState<string>(filters.searchQuery);
+  const debouncedSearch = useDebouncedValue(searchText, 250);
+
+  useEffect(() => {
+    if (debouncedSearch !== filters.searchQuery) {
+      onFilterChange({ searchQuery: debouncedSearch });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [debouncedSearch]);
+
+  // Mantém o input sincronizado quando o pai altera a busca (ex.: "Limpar filtros")
+  useEffect(() => {
+    setSearchText((current) => (current === filters.searchQuery ? current : filters.searchQuery));
+  }, [filters.searchQuery]);
+
+  const toggleCollapsed = useCallback(() => setIsCollapsed((prev) => !prev), []);
+
+  // Clique em qualquer ponto da caixa fechada expande os filtros (não recolhe se já estiver aberta)
+  const expandIfCollapsed = useCallback(() => {
+    if (isCollapsed) setIsCollapsed(false);
+  }, [isCollapsed]);
+
+  const handleResetClick = useCallback(
+    (e: React.MouseEvent<HTMLButtonElement>) => {
+      e.stopPropagation(); // limpar filtros não deve expandir a caixa
+      onResetFilters();
+    },
+    [onResetFilters]
+  );
+
+  const handleVestibularChange = useCallback(
+    (e: React.ChangeEvent<HTMLSelectElement>) => {
+      // Reseta conteúdo ao mudar o vestibular
+      onFilterChange({ vestibular: e.target.value as FilterState['vestibular'], topic: 'TODOS' });
+    },
+    [onFilterChange]
+  );
+
+  const handleAreaChange = useCallback(
+    (e: React.ChangeEvent<HTMLSelectElement>) => {
+      // Reseta conteúdo ao mudar a área
+      onFilterChange({ area: e.target.value as FilterState['area'], topic: 'TODOS' });
+    },
+    [onFilterChange]
+  );
+
+  const handleTopicChange = useCallback(
+    (e: React.ChangeEvent<HTMLSelectElement>) => onFilterChange({ topic: e.target.value }),
+    [onFilterChange]
+  );
+
   return (
-    <div className="bg-white neo-border neo-shadow p-3 mb-4 transition-all">
+    <div
+      className={`bg-surface neo-border neo-shadow p-3 mb-4 transition-colors ${isCollapsed ? 'cursor-pointer' : ''}`}
+      onClick={expandIfCollapsed}
+    >
       <div className={`flex flex-wrap items-center justify-between gap-2 ${isCollapsed ? '' : 'pb-2 mb-2 border-b-2 border-black'}`}>
         <div className="flex items-center gap-2">
-          <Layers className="w-5 h-5 text-black" />
-          <span className="text-sm font-black uppercase tracking-wider text-black">
+          <Layers className="w-5 h-5 text-ink" />
+          <span className="text-sm font-black uppercase tracking-wider text-ink">
             Filtros
 
           </span>
@@ -80,8 +137,8 @@ export const TaxonomyFilterBar: React.FC<TaxonomyFilterBarProps> = ({
         <div className="flex items-center gap-2">
           <button
             type="button"
-            onClick={onResetFilters}
-            className="text-xs font-bold text-gray-700 hover:text-black flex items-center gap-1 hover:underline mr-1"
+            onClick={handleResetClick}
+            className="text-xs font-bold text-gray-700 dark:text-ink-muted hover:text-black flex items-center gap-1 hover:underline mr-1"
           >
             <RotateCcw className="w-3.5 h-3.5" />
             <span>Limpar filtros</span>
@@ -89,8 +146,8 @@ export const TaxonomyFilterBar: React.FC<TaxonomyFilterBarProps> = ({
 
           <button
             type="button"
-            onClick={() => setIsCollapsed(!isCollapsed)}
-            className="p-1 neo-border-sm bg-[#F5F2EA] hover:bg-black hover:text-white transition-colors"
+            onClick={toggleCollapsed}
+            className="p-1 neo-border-sm bg-surface-2 hover:bg-black hover:text-white transition-colors"
             title={isCollapsed ? 'Mostrar filtros' : 'Ocultar filtros'}
             aria-label={isCollapsed ? 'Mostrar filtros' : 'Ocultar filtros'}
           >
@@ -105,18 +162,13 @@ export const TaxonomyFilterBar: React.FC<TaxonomyFilterBarProps> = ({
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
         {/* NÍVEL 1: VESTIBULAR */}
         <div>
-          <label className="block text-xs font-black uppercase tracking-wider text-gray-700 mb-1">
+          <label className="block text-xs font-black uppercase tracking-wider text-gray-700 dark:text-ink-muted mb-1">
             Vestibular
           </label>
           <select
             value={filters.vestibular}
-            onChange={(e) => {
-              onFilterChange({
-                vestibular: e.target.value as any,
-                topic: 'TODOS', // Reseta conteúdo ao mudar o vestibular
-              });
-            }}
-            className="w-full bg-[#F5F2EA] px-3 py-2 text-sm font-extrabold neo-border-sm focus:outline-none focus:bg-white"
+            onChange={handleVestibularChange}
+            className="w-full bg-surface-2 px-3 py-2 text-sm font-extrabold neo-border-sm focus:outline-none focus:bg-surface"
           >
             {EXAM_OPTIONS.map((opt) => (
               <option key={opt.value} value={opt.value}>
@@ -128,18 +180,13 @@ export const TaxonomyFilterBar: React.FC<TaxonomyFilterBarProps> = ({
 
         {/* NÍVEL 2: ÁREA DO CONHECIMENTO */}
         <div>
-          <label className="block text-xs font-black uppercase tracking-wider text-gray-700 mb-1">
+          <label className="block text-xs font-black uppercase tracking-wider text-gray-700 dark:text-ink-muted mb-1">
             Área
           </label>
           <select
             value={filters.area}
-            onChange={(e) => {
-              onFilterChange({
-                area: e.target.value as any,
-                topic: 'TODOS', // Reseta conteúdo ao mudar a área
-              });
-            }}
-            className="w-full bg-[#F5F2EA] px-3 py-2 text-sm font-extrabold neo-border-sm focus:outline-none focus:bg-white"
+            onChange={handleAreaChange}
+            className="w-full bg-surface-2 px-3 py-2 text-sm font-extrabold neo-border-sm focus:outline-none focus:bg-surface"
           >
             {AREA_OPTIONS.map((opt) => (
               <option key={opt.value} value={opt.value}>
@@ -151,13 +198,13 @@ export const TaxonomyFilterBar: React.FC<TaxonomyFilterBarProps> = ({
 
         {/* NÍVEL 3: CONTEÚDO ESPECÍFICO */}
         <div>
-          <label className="block text-xs font-black uppercase tracking-wider text-gray-700 mb-1">
+          <label className="block text-xs font-black uppercase tracking-wider text-gray-700 dark:text-ink-muted mb-1">
             Conteúdo
           </label>
           <select
             value={filters.topic}
-            onChange={(e) => onFilterChange({ topic: e.target.value })}
-            className="w-full bg-[#F5F2EA] px-3 py-2 text-sm font-extrabold neo-border-sm focus:outline-none focus:bg-white"
+            onChange={handleTopicChange}
+            className="w-full bg-surface-2 px-3 py-2 text-sm font-extrabold neo-border-sm focus:outline-none focus:bg-surface"
           >
             <option value="TODOS">Todos os conteúdos</option>
             {availableTopics.map((top) => (
@@ -173,15 +220,15 @@ export const TaxonomyFilterBar: React.FC<TaxonomyFilterBarProps> = ({
       <div className="mt-3 pt-2 border-t border-gray-200 flex flex-wrap items-center justify-between gap-3">
         {/* Status de Resolução */}
         <div className="flex flex-wrap items-center gap-1.5">
-          <span className="text-[11px] font-bold text-gray-600 mr-1">Status:</span>
+          <span className="text-[11px] font-bold text-gray-600 dark:text-ink-muted mr-1">Status:</span>
 
           <button
             type="button"
             onClick={() => onFilterChange({ status: 'TODAS' })}
-            className={`px-2.5 py-1 text-xs font-bold neo-border-sm transition-all ${
+            className={`px-2.5 py-1 text-xs font-bold neo-border-sm transition-colors ${
               filters.status === 'TODAS'
                 ? 'bg-[#111111] text-white'
-                : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
+                : 'bg-gray-100 text-gray-800 dark:text-ink hover:bg-gray-200'
             }`}
           >
             Todas
@@ -190,10 +237,10 @@ export const TaxonomyFilterBar: React.FC<TaxonomyFilterBarProps> = ({
           <button
             type="button"
             onClick={() => onFilterChange({ status: 'NAO_RESOLVIDAS' })}
-            className={`px-2.5 py-1 text-xs font-bold neo-border-sm transition-all flex items-center gap-1 ${
+            className={`px-2.5 py-1 text-xs font-bold neo-border-sm transition-colors flex items-center gap-1 ${
               filters.status === 'NAO_RESOLVIDAS'
-                ? 'bg-[#FFE600] text-black font-extrabold'
-                : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
+                ? 'bg-primary text-ink font-extrabold'
+                : 'bg-gray-100 text-gray-800 dark:text-ink hover:bg-gray-200'
             }`}
           >
             <HelpCircle className="w-3 h-3" />
@@ -203,10 +250,10 @@ export const TaxonomyFilterBar: React.FC<TaxonomyFilterBarProps> = ({
           <button
             type="button"
             onClick={() => onFilterChange({ status: 'ACERTADAS' })}
-            className={`px-2.5 py-1 text-xs font-bold neo-border-sm transition-all flex items-center gap-1 ${
+            className={`px-2.5 py-1 text-xs font-bold neo-border-sm transition-colors flex items-center gap-1 ${
               filters.status === 'ACERTADAS'
                 ? 'bg-[#00E599] text-black font-extrabold'
-                : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
+                : 'bg-gray-100 text-gray-800 dark:text-ink hover:bg-gray-200'
             }`}
           >
             <CheckCircle2 className="w-3 h-3" />
@@ -216,10 +263,10 @@ export const TaxonomyFilterBar: React.FC<TaxonomyFilterBarProps> = ({
           <button
             type="button"
             onClick={() => onFilterChange({ status: 'ERRADAS' })}
-            className={`px-2.5 py-1 text-xs font-bold neo-border-sm transition-all flex items-center gap-1 ${
+            className={`px-2.5 py-1 text-xs font-bold neo-border-sm transition-colors flex items-center gap-1 ${
               filters.status === 'ERRADAS'
                 ? 'bg-[#FF3366] text-white font-extrabold'
-                : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
+                : 'bg-gray-100 text-gray-800 dark:text-ink hover:bg-gray-200'
             }`}
           >
             <XCircle className="w-3 h-3" />
@@ -233,9 +280,9 @@ export const TaxonomyFilterBar: React.FC<TaxonomyFilterBarProps> = ({
           <input
             type="text"
             placeholder="Buscar questão..."
-            value={filters.searchQuery}
-            onChange={(e) => onFilterChange({ searchQuery: e.target.value })}
-            className="w-full pl-8 pr-3 py-1.5 text-sm neo-border-sm bg-[#F5F2EA] focus:bg-white focus:outline-none"
+            value={searchText}
+            onChange={(e) => setSearchText(e.target.value)}
+            className="w-full pl-8 pr-3 py-1.5 text-sm neo-border-sm bg-surface-2 focus:bg-surface focus:outline-none"
           />
         </div>
       </div>
@@ -244,3 +291,5 @@ export const TaxonomyFilterBar: React.FC<TaxonomyFilterBarProps> = ({
     </div>
   );
 };
+
+export const TaxonomyFilterBar = memo(TaxonomyFilterBarComponent);

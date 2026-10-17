@@ -292,17 +292,17 @@ export const SavedDraftsView: React.FC<SavedDraftsViewProps> = ({
   return (
     <div className="max-w-7xl mx-auto space-y-5">
       {/* Cabeçalho da Seção */}
-      <div className="bg-white dark:bg-[#18181B] neo-border neo-shadow p-5 flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="bg-surface neo-border neo-shadow p-5 flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2">
             <div className="bg-[#FF5A36] text-white p-2 neo-border-sm">
               <Edit3 className="w-5 h-5" />
             </div>
             <div>
-              <h2 className="text-2xl md:text-3xl font-black text-black dark:text-white uppercase tracking-tight">
+              <h2 className="text-2xl md:text-3xl font-black text-ink uppercase tracking-tight">
                 Meus rascunhos
               </h2>
-              <p className="text-sm font-bold text-gray-700 dark:text-gray-300">
+              <p className="text-sm font-bold text-gray-700 dark:text-ink-muted">
                 Seus cálculos e anotações feitos nas questões.
               </p>
             </div>
@@ -310,15 +310,15 @@ export const SavedDraftsView: React.FC<SavedDraftsViewProps> = ({
         </div>
 
         <div className="flex items-center gap-3">
-          <div className="bg-[#FFE600] text-black px-3.5 py-1.5 neo-border-sm font-black text-xs flex items-center gap-1.5">
-            <Sparkles className="w-4 h-4 text-black" />
+          <div className="bg-primary text-ink px-3.5 py-1.5 neo-border-sm font-black text-xs flex items-center gap-1.5">
+            <Sparkles className="w-4 h-4 text-ink" />
             <span>{draftItems.length} rascunhos</span>
           </div>
 
           <button
             type="button"
             onClick={onNavigateToQuestions}
-            className="px-3 py-1.5 text-xs font-black neo-btn bg-white dark:bg-[#27272A] text-black dark:text-white flex items-center gap-1.5"
+            className="px-3 py-1.5 text-xs font-black neo-btn bg-surface text-ink flex items-center gap-1.5"
           >
             <BookOpen className="w-4 h-4" />
             <span>Ir para Questões</span>
@@ -327,11 +327,11 @@ export const SavedDraftsView: React.FC<SavedDraftsViewProps> = ({
       </div>
 
       {/* Barra de Filtros Padrões */}
-      <div className="bg-white dark:bg-[#18181B] neo-border neo-shadow p-4 space-y-3">
+      <div className="bg-surface neo-border neo-shadow p-4 space-y-3">
         <div className="flex items-center justify-between pb-2 border-b-2 border-black dark:border-gray-700">
           <div className="flex items-center gap-2">
-            <Filter className="w-4 h-4 text-black dark:text-white" />
-            <span className="text-sm font-black uppercase tracking-wider text-black dark:text-white">
+            <Filter className="w-4 h-4 text-ink" />
+            <span className="text-sm font-black uppercase tracking-wider text-ink">
               Filtros
             </span>
             <span className="text-[11px] font-bold text-gray-500 dark:text-gray-400">
@@ -348,7 +348,7 @@ export const SavedDraftsView: React.FC<SavedDraftsViewProps> = ({
                 setTopic('TODOS');
                 setSearchQuery('');
               }}
-              className="text-xs font-bold text-gray-700 dark:text-gray-300 hover:text-black dark:hover:text-white flex items-center gap-1"
+              className="text-xs font-bold text-gray-700 dark:text-ink-muted hover:text-black dark:hover:text-white flex items-center gap-1"
             >
               <RotateCcw className="w-3.5 h-3.5" />
               <span>Limpar filtros</span>
@@ -359,7 +359,7 @@ export const SavedDraftsView: React.FC<SavedDraftsViewProps> = ({
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           {/* Nível 1: Vestibular */}
           <div>
-            <label className="block text-xs font-black uppercase tracking-wider text-gray-600 dark:text-gray-400 mb-1">
+            <label className="block text-xs font-black uppercase tracking-wider text-gray-600 dark:text-ink-muted mb-1">
               Vestibular
             </label>
             <select
@@ -368,7 +368,7 @@ export const SavedDraftsView: React.FC<SavedDraftsViewProps> = ({
                 setVestibular(e.target.value as any);
                 setTopic('TODOS');
               }}
-              className="w-full bg-[#F5F2EA] dark:bg-[#27272A] text-black dark:text-white px-3 py-2 text-sm font-extrabold neo-border-sm focus:outline-none"
+              className="w-full bg-surface-2 text-ink px-3 py-2 text-sm font-extrabold neo-border-sm focus:outline-none"
             >
               {EXAM_OPTIONS.map((opt) => (
                 <option key={opt.value} value={opt.value}>
@@ -380,7 +380,7 @@ export const SavedDraftsView: React.FC<SavedDraftsViewProps> = ({
 
           {/* Nível 2: Área de Conhecimento */}
           <div>
-            <label className="block text-xs font-black uppercase tracking-wider text-gray-600 dark:text-gray-400 mb-1">
+            <label className="block text-xs font-black uppercase tracking-wider text-gray-600 dark:text-ink-muted mb-1">
               Área
             </label>
             <select
@@ -389,7 +389,7 @@ export const SavedDraftsView: React.FC<SavedDraftsViewProps> = ({
                 setArea(e.target.value as any);
                 setTopic('TODOS');
               }}
-              className="w-full bg-[#F5F2EA] dark:bg-[#27272A] text-black dark:text-white px-3 py-2 text-sm font-extrabold neo-border-sm focus:outline-none"
+              className="w-full bg-surface-2 text-ink px-3 py-2 text-sm font-extrabold neo-border-sm focus:outline-none"
             >
               {AREA_OPTIONS.map((opt) => (
                 <option key={opt.value} value={opt.value}>
@@ -401,13 +401,13 @@ export const SavedDraftsView: React.FC<SavedDraftsViewProps> = ({
 
           {/* Nível 3: Conteúdo Específico */}
           <div>
-            <label className="block text-xs font-black uppercase tracking-wider text-gray-600 dark:text-gray-400 mb-1">
+            <label className="block text-xs font-black uppercase tracking-wider text-gray-600 dark:text-ink-muted mb-1">
               Conteúdo
             </label>
             <select
               value={topic}
               onChange={(e) => setTopic(e.target.value)}
-              className="w-full bg-[#F5F2EA] dark:bg-[#27272A] text-black dark:text-white px-3 py-2 text-sm font-extrabold neo-border-sm focus:outline-none"
+              className="w-full bg-surface-2 text-ink px-3 py-2 text-sm font-extrabold neo-border-sm focus:outline-none"
             >
               <option value="TODOS">Todos os Conteúdos</option>
               {availableTopics.map((top) => (
@@ -427,7 +427,7 @@ export const SavedDraftsView: React.FC<SavedDraftsViewProps> = ({
             placeholder="Buscar pelo texto da questão..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-8 pr-3 py-2 text-sm font-bold neo-border-sm bg-[#F5F2EA] dark:bg-[#27272A] text-black dark:text-white focus:outline-none"
+            className="w-full pl-8 pr-3 py-2 text-sm font-bold neo-border-sm bg-surface-2 text-ink focus:outline-none"
           />
         </div>
       </div>
@@ -441,7 +441,7 @@ export const SavedDraftsView: React.FC<SavedDraftsViewProps> = ({
             return (
               <div
                 key={question.id}
-                className="bg-white dark:bg-[#18181B] neo-border neo-shadow flex flex-col justify-between overflow-hidden"
+                className="bg-surface neo-border neo-shadow flex flex-col justify-between overflow-hidden"
               >
                 {/* Miniatura do Canvas */}
                 <DraftThumbnail
@@ -454,10 +454,10 @@ export const SavedDraftsView: React.FC<SavedDraftsViewProps> = ({
                 <div className="p-4 flex-1 flex flex-col justify-between">
                   <div>
                     <div className="flex flex-wrap items-center gap-1.5 mb-2">
-                      <span className="px-2 py-0.5 text-[10px] font-black uppercase bg-[#FFE600] text-black neo-border-sm">
+                      <span className="px-2 py-0.5 text-[10px] font-black uppercase bg-primary text-ink neo-border-sm">
                         {question.vestibular} {question.year}
                       </span>
-                      <span className="px-2 py-0.5 text-[10px] font-black uppercase bg-gray-100 dark:bg-gray-800 text-black dark:text-white neo-border-sm">
+                      <span className="px-2 py-0.5 text-[10px] font-black uppercase bg-gray-100 dark:bg-gray-800 text-ink neo-border-sm">
                         {question.discipline}
                       </span>
                       <span className="text-[10px] font-mono text-gray-500 dark:text-gray-400 ml-auto">
@@ -469,7 +469,7 @@ export const SavedDraftsView: React.FC<SavedDraftsViewProps> = ({
                       📌 {question.topic}
                     </h4>
 
-                    <p className="text-xs font-medium text-gray-800 dark:text-gray-300 line-clamp-3 mb-4 leading-relaxed">
+                    <p className="text-xs font-medium text-gray-800 dark:text-ink line-clamp-3 mb-4 leading-relaxed">
                       {statementPlain}
                     </p>
                   </div>
@@ -479,7 +479,7 @@ export const SavedDraftsView: React.FC<SavedDraftsViewProps> = ({
                     <button
                       type="button"
                       onClick={() => onOpenQuestionWithDraft(question.id)}
-                      className="px-3 py-1.5 text-xs font-black neo-btn bg-[#00F0FF] text-black flex items-center gap-1.5 hover:scale-105"
+                      className="px-3 py-1.5 text-xs font-black neo-btn bg-secondary text-ink flex items-center gap-1.5 hover:scale-105"
                       title="Abrir questão"
                     >
                       <ExternalLink className="w-3.5 h-3.5" />
@@ -502,18 +502,18 @@ export const SavedDraftsView: React.FC<SavedDraftsViewProps> = ({
         </div>
       ) : (
         /* Estado Vazio */
-        <div className="bg-white dark:bg-[#18181B] neo-border neo-shadow p-12 text-center space-y-4">
-          <div className="w-16 h-16 bg-[#FFE600] dark:bg-[#27272A] neo-border neo-shadow-sm mx-auto flex items-center justify-center">
-            <Edit3 className="w-8 h-8 text-black dark:text-yellow-300" />
+        <div className="bg-surface neo-border neo-shadow p-12 text-center space-y-4">
+          <div className="w-16 h-16 bg-primary neo-border neo-shadow-sm mx-auto flex items-center justify-center">
+            <Edit3 className="w-8 h-8 text-ink dark:text-yellow-300" />
           </div>
 
           <div>
-            <h3 className="text-lg md:text-xl font-black text-black dark:text-white">
+            <h3 className="text-lg md:text-xl font-black text-ink">
               {draftItems.length === 0
                 ? 'Nenhum rascunho salvo ainda'
                 : 'Nenhum rascunho encontrado'}
             </h3>
-            <p className="text-sm text-gray-600 dark:text-gray-400 max-w-sm mx-auto mt-1 leading-relaxed">
+            <p className="text-sm text-gray-600 dark:text-ink-muted max-w-sm mx-auto mt-1 leading-relaxed">
               {draftItems.length === 0
                 ? 'Ao resolver uma questão, clique em "Ativar Rascunho" para fazer anotações. Elas são salvas automaticamente.'
                 : 'Tente mudar os filtros.'}
@@ -523,7 +523,7 @@ export const SavedDraftsView: React.FC<SavedDraftsViewProps> = ({
           <button
             type="button"
             onClick={onNavigateToQuestions}
-            className="px-5 py-2.5 text-xs font-black neo-btn bg-[#FFE600] text-black inline-flex items-center gap-2"
+            className="px-5 py-2.5 text-xs font-black neo-btn bg-primary text-ink inline-flex items-center gap-2"
           >
             <BookOpen className="w-4 h-4" />
             <span>Ir para as questões</span>

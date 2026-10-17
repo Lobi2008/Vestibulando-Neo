@@ -1,110 +1,94 @@
 @import "tailwindcss";
 
-/* Tailwind v4: faz o variant dark: seguir a classe .dark (alternância manual) e não o tema do sistema operacional */
+/* Tailwind v4: o variant dark: segue a classe .dark (alternância manual) */
 @custom-variant dark (&:where(.dark, .dark *));
 
+/* ============================================================
+   TOKENS SEMÂNTICOS
+   Valores do modo claro no :root; modo escuro redefine apenas variáveis.
+   Os componentes usam bg-surface, text-ink etc. -> nenhuma regra global
+   por atributo/!important é necessária e o navegador não recalcula estilos
+   da árvore inteira a cada hover/focus.
+   ============================================================ */
+:root {
+  --font-heading: 'Space Grotesk', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+
+  --surface: #FFFFFF;
+  --surface-2: #F5F2EA;
+  --page: #F8F5EE;
+  --ink: #111111;
+  --ink-muted: #4B5563;
+  --line: #111111;
+  --line-thick: #111111;
+  --shadow-neo: #111111;
+  --primary: #FFE600;
+  --primary-hover: #FFD600;
+  --secondary: #00F0FF;
+  --scroll-track: #F0EDE4;
+  --scroll-thumb: #FFE600;
+  --scroll-thumb-hover: #FF5C00;
+  --grid-line: rgba(0, 0, 0, 0.08);
+}
+
+html.dark {
+  --surface: #1A1523;
+  --surface-2: #231C2F;
+  --page: #0F0B17;
+  --ink: #F5F2EA;
+  --ink-muted: #B8B0C9;
+  --line: #4C3F66;
+  --line-thick: #6D5A94;
+  --shadow-neo: #2E2540;
+  --primary: #7C3AED;
+  --primary-hover: #8B5CF6;
+  --secondary: #5B21B6;
+  --scroll-track: #1A1523;
+  --scroll-thumb: #7C3AED;
+  --scroll-thumb-hover: #8B5CF6;
+  --grid-line: rgba(255, 255, 255, 0.07);
+}
+
+@theme inline {
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-page: var(--page);
+  --color-ink: var(--ink);
+  --color-ink-muted: var(--ink-muted);
+  --color-line: var(--line);
+  --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
+  --color-secondary: var(--secondary);
+}
+
 @layer base {
-  :root {
-    --font-heading: 'Space Grotesk', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-    --font-mono: 'JetBrains Mono', monospace;
-
-    /* Paleta do modo escuro (roxo como cor principal) */
-    --dark-bg: #0F0B17;
-    --dark-surface: #1A1523;
-    --dark-surface-2: #231C2F;
-    --dark-border: #4C3F66;
-    --dark-shadow: #2E2540;
-    --dark-primary: #7C3AED;      /* substitui o amarelo */
-    --dark-primary-hover: #8B5CF6;
-    --dark-secondary: #5B21B6;    /* substitui o ciano */
-    --dark-text: #F5F2EA;
-    --dark-text-muted: #B8B0C9;
-  }
-
   body {
     font-family: var(--font-heading);
-    background-color: #F8F5EE;
-    color: #111111;
+    background-color: var(--page);
+    color: var(--ink);
     overflow-x: hidden;
     user-select: none;
     -webkit-font-smoothing: antialiased;
-    transition: background-color 0.2s ease, color 0.2s ease;
   }
 
-  html.dark body, body.dark {
-    background-color: var(--dark-bg);
-    color: var(--dark-text);
+  /* Campos de formulário seguem o tema por variável (sem override forçado:
+     classes utilitárias continuam podendo sobrescrever) */
+  input,
+  select,
+  textarea {
+    background-color: var(--surface-2);
+    color: var(--ink);
+    border-color: var(--line);
+  }
+
+  ::selection {
+    background: var(--primary);
+    color: #FFFFFF;
   }
 }
 
-/* Dark mode overrides for cards and panels */
-html.dark .bg-white, .dark .bg-white {
-  background-color: var(--dark-surface) !important;
-  color: var(--dark-text) !important;
-}
-
-html.dark .text-black, .dark .text-black,
-html.dark .text-gray-900, .dark .text-gray-900,
-html.dark .text-gray-800, .dark .text-gray-800 {
-  color: #F5F2EA !important;
-}
-
-html.dark .text-gray-700, .dark .text-gray-700,
-html.dark .text-gray-600, .dark .text-gray-600 {
-  color: var(--dark-text-muted) !important;
-}
-
-html.dark .bg-\[\#F8F5EE\], .dark .bg-\[\#F8F5EE\],
-html.dark .bg-\[\#F5F2EA\], .dark .bg-\[\#F5F2EA\],
-html.dark .bg-\[\#FAF8F5\], .dark .bg-\[\#FAF8F5\],
-html.dark .bg-\[\#FBF8F1\], .dark .bg-\[\#FBF8F1\] {
-  background-color: var(--dark-surface-2) !important;
-  color: var(--dark-text) !important;
-}
-
-html.dark .neo-border, .dark .neo-border {
-  border-color: var(--dark-border) !important;
-}
-
-html.dark .neo-border-sm, .dark .neo-border-sm {
-  border-color: var(--dark-border) !important;
-}
-
-html.dark .neo-border-thick, .dark .neo-border-thick {
-  border-color: #6D5A94 !important;
-}
-
-html.dark .neo-shadow, .dark .neo-shadow {
-  box-shadow: 4px 4px 0px var(--dark-shadow) !important;
-}
-
-html.dark .neo-shadow-sm, .dark .neo-shadow-sm {
-  box-shadow: 2px 2px 0px var(--dark-shadow) !important;
-}
-
-html.dark .neo-shadow-lg, .dark .neo-shadow-lg {
-  box-shadow: 6px 6px 0px var(--dark-shadow) !important;
-}
-
-html.dark .neo-shadow-xl, .dark .neo-shadow-xl {
-  box-shadow: 8px 8px 0px var(--dark-shadow) !important;
-}
-
-html.dark input, .dark input,
-html.dark select, .dark select,
-html.dark textarea, .dark textarea {
-  background-color: var(--dark-surface-2) !important;
-  color: #FFFFFF !important;
-  border-color: var(--dark-border) !important;
-}
-
-/* ============================================================
-   MODO ESCURO: fundos claros viram escuros; amarelo/ciano viram roxo.
-   ============================================================ */
-
-/* Tailwind v4 gera bg-gray-50, bg-orange-100 etc. a partir de variáveis --color-*.
-   Redefinir as variáveis no modo escuro corrige todos os fundos claros (e hovers)
-   sem precisar saber em quais componentes eles aparecem. */
+/* Escalas do Tailwind remapeadas no modo escuro: só custom properties,
+   resolvidas pelo próprio utilitário (bg-gray-100, hover:bg-yellow-100 etc.) */
 html.dark {
   --color-red-50: #301212;
   --color-red-100: #3F1818;
@@ -247,262 +231,89 @@ html.dark {
   --color-stone-300: #3A2F4F;
 }
 
-/* Fundos claros "soltos": branco com opacidade e hex arbitrário (#FFF..., #F5F..., #EEE...) */
-html.dark :is(
-  [class^="bg-white/" i], [class*=" bg-white/" i],
-  [class^="bg-[#F0F" i], [class*=" bg-[#F0F" i],
-  [class^="bg-[#F1F" i], [class*=" bg-[#F1F" i],
-  [class^="bg-[#F2F" i], [class*=" bg-[#F2F" i],
-  [class^="bg-[#F3F" i], [class*=" bg-[#F3F" i],
-  [class^="bg-[#F4F" i], [class*=" bg-[#F4F" i],
-  [class^="bg-[#F5F" i], [class*=" bg-[#F5F" i],
-  [class^="bg-[#F6F" i], [class*=" bg-[#F6F" i],
-  [class^="bg-[#F7F" i], [class*=" bg-[#F7F" i],
-  [class^="bg-[#F8F" i], [class*=" bg-[#F8F" i],
-  [class^="bg-[#F9F" i], [class*=" bg-[#F9F" i],
-  [class^="bg-[#FAF" i], [class*=" bg-[#FAF" i],
-  [class^="bg-[#FBF" i], [class*=" bg-[#FBF" i],
-  [class^="bg-[#FCF" i], [class*=" bg-[#FCF" i],
-  [class^="bg-[#FDF" i], [class*=" bg-[#FDF" i],
-  [class^="bg-[#FEF" i], [class*=" bg-[#FEF" i],
-  [class^="bg-[#FFF" i], [class*=" bg-[#FFF" i],
-  [class^="bg-[#E0E" i], [class*=" bg-[#E0E" i],
-  [class^="bg-[#E1E" i], [class*=" bg-[#E1E" i],
-  [class^="bg-[#E2E" i], [class*=" bg-[#E2E" i],
-  [class^="bg-[#E3E" i], [class*=" bg-[#E3E" i],
-  [class^="bg-[#E4E" i], [class*=" bg-[#E4E" i],
-  [class^="bg-[#E5E" i], [class*=" bg-[#E5E" i],
-  [class^="bg-[#E6E" i], [class*=" bg-[#E6E" i],
-  [class^="bg-[#E7E" i], [class*=" bg-[#E7E" i],
-  [class^="bg-[#E8E" i], [class*=" bg-[#E8E" i],
-  [class^="bg-[#E9E" i], [class*=" bg-[#E9E" i],
-  [class^="bg-[#EAE" i], [class*=" bg-[#EAE" i],
-  [class^="bg-[#EBE" i], [class*=" bg-[#EBE" i],
-  [class^="bg-[#ECE" i], [class*=" bg-[#ECE" i],
-  [class^="bg-[#EDE" i], [class*=" bg-[#EDE" i],
-  [class^="bg-[#EEE" i], [class*=" bg-[#EEE" i],
-  [class^="bg-[#EFE" i], [class*=" bg-[#EFE" i]
-) {
-  background-color: var(--dark-surface-2) !important;
-  color: var(--dark-text) !important;
-}
-
-html.dark [class*="hover:bg-white"]:hover {
-  background-color: var(--dark-surface-2) !important;
-}
-
-/* Amarelo / âmbar saturados -> roxo principal (vem DEPOIS da regra acima para vencer) */
-html.dark :is(
-  [class^="bg-yellow-3"], [class*=" bg-yellow-3"],
-  [class^="bg-yellow-4"], [class*=" bg-yellow-4"],
-  [class^="bg-yellow-5"], [class*=" bg-yellow-5"],
-  [class^="bg-yellow-6"], [class*=" bg-yellow-6"],
-  [class^="bg-yellow-7"], [class*=" bg-yellow-7"],
-  [class^="bg-amber-3"], [class*=" bg-amber-3"],
-  [class^="bg-amber-4"], [class*=" bg-amber-4"],
-  [class^="bg-amber-5"], [class*=" bg-amber-5"],
-  [class^="bg-amber-6"], [class*=" bg-amber-6"],
-  [class^="bg-amber-7"], [class*=" bg-amber-7"],
-  [class^="bg-[#FFE" i], [class*=" bg-[#FFE" i],
-  [class^="bg-[#FFD" i], [class*=" bg-[#FFD" i],
-  [class^="bg-[#FAC" i], [class*=" bg-[#FAC" i]
-) {
-  background-color: var(--dark-primary) !important;
-  color: #FFFFFF !important;
-}
-
-/* Ciano / azul-claro saturados -> roxo secundário */
-html.dark :is(
-  [class^="bg-cyan-3"], [class*=" bg-cyan-3"],
-  [class^="bg-cyan-4"], [class*=" bg-cyan-4"],
-  [class^="bg-cyan-5"], [class*=" bg-cyan-5"],
-  [class^="bg-cyan-6"], [class*=" bg-cyan-6"],
-  [class^="bg-cyan-7"], [class*=" bg-cyan-7"],
-  [class^="bg-sky-3"], [class*=" bg-sky-3"],
-  [class^="bg-sky-4"], [class*=" bg-sky-4"],
-  [class^="bg-sky-5"], [class*=" bg-sky-5"],
-  [class^="bg-sky-6"], [class*=" bg-sky-6"],
-  [class^="bg-sky-7"], [class*=" bg-sky-7"],
-  [class^="bg-[#00E" i], [class*=" bg-[#00E" i],
-  [class^="bg-[#00F" i], [class*=" bg-[#00F" i],
-  [class^="bg-[#22D" i], [class*=" bg-[#22D" i]
-) {
-  background-color: var(--dark-secondary) !important;
-  color: #FFFFFF !important;
-}
-
-/* Todo texto dentro das caixas roxas fica claro (vence .text-black, .text-gray-* etc.) */
-html.dark :is(
-  [class^="bg-yellow-3"], [class*=" bg-yellow-3"],
-  [class^="bg-yellow-4"], [class*=" bg-yellow-4"],
-  [class^="bg-yellow-5"], [class*=" bg-yellow-5"],
-  [class^="bg-yellow-6"], [class*=" bg-yellow-6"],
-  [class^="bg-yellow-7"], [class*=" bg-yellow-7"],
-  [class^="bg-amber-3"], [class*=" bg-amber-3"],
-  [class^="bg-amber-4"], [class*=" bg-amber-4"],
-  [class^="bg-amber-5"], [class*=" bg-amber-5"],
-  [class^="bg-amber-6"], [class*=" bg-amber-6"],
-  [class^="bg-amber-7"], [class*=" bg-amber-7"],
-  [class^="bg-[#FFE" i], [class*=" bg-[#FFE" i],
-  [class^="bg-[#FFD" i], [class*=" bg-[#FFD" i],
-  [class^="bg-[#FAC" i], [class*=" bg-[#FAC" i],
-  [class^="bg-cyan-3"], [class*=" bg-cyan-3"],
-  [class^="bg-cyan-4"], [class*=" bg-cyan-4"],
-  [class^="bg-cyan-5"], [class*=" bg-cyan-5"],
-  [class^="bg-cyan-6"], [class*=" bg-cyan-6"],
-  [class^="bg-cyan-7"], [class*=" bg-cyan-7"],
-  [class^="bg-sky-3"], [class*=" bg-sky-3"],
-  [class^="bg-sky-4"], [class*=" bg-sky-4"],
-  [class^="bg-sky-5"], [class*=" bg-sky-5"],
-  [class^="bg-sky-6"], [class*=" bg-sky-6"],
-  [class^="bg-sky-7"], [class*=" bg-sky-7"],
-  [class^="bg-[#00E" i], [class*=" bg-[#00E" i],
-  [class^="bg-[#00F" i], [class*=" bg-[#00F" i],
-  [class^="bg-[#22D" i], [class*=" bg-[#22D" i]
-) :is(*, .text-black, .text-gray-900, .text-gray-800, .text-gray-700, .text-gray-600) {
-  color: #FFFFFF !important;
-}
-
-/* Botões neobrutalistas amarelos: hover roxo mais claro no escuro */
-html.dark .neo-btn:hover:is(
-  [class^="bg-yellow-3" i], [class*=" bg-yellow-3" i],
-  [class^="bg-yellow-4" i], [class*=" bg-yellow-4" i],
-  [class^="bg-[#FFE" i], [class*=" bg-[#FFE" i],
-  [class^="bg-[#FFD" i], [class*=" bg-[#FFD" i]
-) {
-  background-color: var(--dark-primary-hover) !important;
-}
-
-/* Realce de texto selecionado em roxo */
-html.dark ::selection {
-  background: var(--dark-primary);
-  color: #FFFFFF;
-}
-
-/* Texto que o aluno pode selecionar e copiar (o restante do app mantém user-select: none) */
+/* Texto que o aluno pode selecionar e copiar */
 .selectable-text {
   user-select: text;
   -webkit-user-select: text;
   cursor: text;
 }
 
-/* Neobrutalism utility classes */
-.neo-border {
-  border: 3px solid #111111;
-}
-
-.neo-border-sm {
-  border: 2px solid #111111;
-}
-
-.neo-border-thick {
-  border: 4px solid #111111;
-}
-
-.neo-shadow {
-  box-shadow: 4px 4px 0px #111111;
-}
-
-.neo-shadow-sm {
-  box-shadow: 2px 2px 0px #111111;
-}
-
-.neo-shadow-lg {
-  box-shadow: 6px 6px 0px #111111;
-}
-
-.neo-shadow-xl {
-  box-shadow: 8px 8px 0px #111111;
-}
+/* Neobrutalism utilities (cores vindas de variáveis) */
+.neo-border { border: 3px solid var(--line); }
+.neo-border-sm { border: 2px solid var(--line); }
+.neo-border-thick { border: 4px solid var(--line-thick); }
+.neo-shadow { box-shadow: 4px 4px 0px var(--shadow-neo); }
+.neo-shadow-sm { box-shadow: 2px 2px 0px var(--shadow-neo); }
+.neo-shadow-lg { box-shadow: 6px 6px 0px var(--shadow-neo); }
+.neo-shadow-xl { box-shadow: 8px 8px 0px var(--shadow-neo); }
 
 .neo-btn {
-  transition: all 0.08s ease;
-  border: 3px solid #111111;
-  box-shadow: 4px 4px 0px #111111;
+  transition-property: transform, box-shadow, background-color;
+  transition-duration: 80ms;
+  transition-timing-function: ease;
+  border: 3px solid var(--line);
+  box-shadow: 4px 4px 0px var(--shadow-neo);
 }
 
 .neo-btn:hover {
   transform: translate(-1px, -1px);
-  box-shadow: 5px 5px 0px #111111;
+  box-shadow: 5px 5px 0px var(--shadow-neo);
 }
 
 .neo-btn:active {
   transform: translate(3px, 3px);
-  box-shadow: 1px 1px 0px #111111;
+  box-shadow: 1px 1px 0px var(--shadow-neo);
 }
 
-/* Paper Grid & Lined patterns for Digital Pen Scratchpad */
+/* Padrões da mesa digitalizadora */
 .bg-grid-pattern {
   background-size: 24px 24px;
-  background-image: 
+  background-image:
     linear-gradient(to right, rgba(0, 0, 0, 0.08) 1px, transparent 1px),
     linear-gradient(to bottom, rgba(0, 0, 0, 0.08) 1px, transparent 1px);
 }
-
 .bg-grid-pattern-dark {
   background-size: 24px 24px;
-  background-image: 
+  background-image:
     linear-gradient(to right, rgba(255, 255, 255, 0.07) 1px, transparent 1px),
     linear-gradient(to bottom, rgba(255, 255, 255, 0.07) 1px, transparent 1px);
 }
-
 .bg-lined-pattern {
   background-size: 100% 28px;
   background-image: linear-gradient(to bottom, rgba(0, 0, 0, 0.12) 1px, transparent 1px);
 }
-
 .bg-lined-pattern-dark {
   background-size: 100% 28px;
   background-image: linear-gradient(to bottom, rgba(255, 255, 255, 0.09) 1px, transparent 1px);
 }
-
 .bg-dots-pattern {
   background-size: 20px 20px;
   background-image: radial-gradient(circle, rgba(0,0,0,0.18) 1.5px, transparent 1.5px);
 }
-
 .bg-dots-pattern-dark {
   background-size: 20px 20px;
   background-image: radial-gradient(circle, rgba(255,255,255,0.18) 1.5px, transparent 1.5px);
 }
 
-/* Stylus pointer styling */
 .stylus-canvas {
   touch-action: none;
   cursor: crosshair;
 }
 
-/* Windows 11 Custom Scrollbar in Neobrutalist theme */
-::-webkit-scrollbar {
-  width: 10px;
-  height: 10px;
+/* Scrollbar (variáveis trocam no modo escuro) */
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: var(--scroll-track); border-left: 2px solid var(--line); }
+::-webkit-scrollbar-thumb { background: var(--scroll-thumb); border: 2px solid var(--line); }
+::-webkit-scrollbar-thumb:hover { background: var(--scroll-thumb-hover); }
+
+/* Marca-texto (CSS Custom Highlight API): pinta o trecho sem alterar o DOM */
+::highlight(user-hl) {
+  background-color: #FFE600;
+  color: #111111;
 }
 
-::-webkit-scrollbar-track {
-  background: #F0EDE4;
-  border-left: 2px solid #111111;
-}
-
-::-webkit-scrollbar-thumb {
-  background: #FFE600;
-  border: 2px solid #111111;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: #FF5C00;
-}
-
-/* Scrollbar no modo escuro */
-html.dark ::-webkit-scrollbar-track {
-  background: var(--dark-surface);
-  border-left: 2px solid var(--dark-border);
-}
-
-html.dark ::-webkit-scrollbar-thumb {
-  background: var(--dark-primary);
-  border: 2px solid var(--dark-border);
-}
-
-html.dark ::-webkit-scrollbar-thumb:hover {
-  background: var(--dark-primary-hover);
+/* Barra de progresso do "segurar para riscar" alternativa */
+@keyframes hold-progress {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
 }

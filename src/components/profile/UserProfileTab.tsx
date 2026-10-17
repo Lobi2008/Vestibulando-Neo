@@ -67,20 +67,20 @@ export const UserProfileTab: React.FC<UserProfileTabProps> = ({
   return (
     <div className="max-w-4xl mx-auto space-y-6">
       {/* Cabeçalho do Perfil */}
-      <div className="bg-white dark:bg-[#18181B] neo-border neo-shadow p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="bg-surface neo-border neo-shadow p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl md:text-3xl font-black text-black dark:text-white flex items-center gap-2">
+          <h2 className="text-2xl md:text-3xl font-black text-ink flex items-center gap-2">
             <User className="w-6 h-6 text-[#FF3366]" />
             Meu perfil
           </h2>
-          <p className="text-sm font-bold text-gray-700 dark:text-gray-300 mt-1">
+          <p className="text-sm font-bold text-gray-700 dark:text-ink-muted mt-1">
             Clique no lápis para editar.
           </p>
         </div>
 
         <div className="flex items-center gap-2">
-          <div className="bg-[#FFE600] text-black px-3 py-1.5 neo-border-sm font-black text-xs flex items-center gap-1.5">
-            <Award className="w-4 h-4 text-black" />
+          <div className="bg-primary text-ink px-3 py-1.5 neo-border-sm font-black text-xs flex items-center gap-1.5">
+            <Award className="w-4 h-4 text-ink" />
             <span>NÍVEL {profile.level}</span>
           </div>
           <div className="bg-[#FF5A36] text-white px-3 py-1.5 neo-border-sm font-black text-xs flex items-center gap-1.5">
@@ -91,13 +91,13 @@ export const UserProfileTab: React.FC<UserProfileTabProps> = ({
       </div>
 
       {/* Cartão de Informações em Texto Plano com Edição Inline */}
-      <div className="bg-white dark:bg-[#18181B] neo-border neo-shadow p-6 space-y-6">
-        <h3 className="text-base font-black uppercase tracking-wider text-black dark:text-white border-b-2 border-black dark:border-gray-700 pb-2">
+      <div className="bg-surface neo-border neo-shadow p-6 space-y-6">
+        <h3 className="text-base font-black uppercase tracking-wider text-ink border-b-2 border-black dark:border-gray-700 pb-2">
           Seus dados
         </h3>
 
         {/* 1. Nome ou Apelido */}
-        <div className="p-4 bg-[#F8F5EE] dark:bg-[#202024] neo-border-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="p-4 bg-page neo-border-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div className="space-y-1">
             <span className="block text-xs font-black uppercase tracking-wider text-gray-500 dark:text-gray-400">
               Nome
@@ -108,7 +108,7 @@ export const UserProfileTab: React.FC<UserProfileTabProps> = ({
                   type="text"
                   value={tempName}
                   onChange={(e) => setTempName(e.target.value)}
-                  className="px-3 py-1 text-sm font-black neo-border-sm bg-white dark:bg-[#27272A] text-black dark:text-white focus:outline-none"
+                  className="px-3 py-1 text-sm font-black neo-border-sm bg-surface text-ink focus:outline-none"
                   autoFocus
                   onKeyDown={(e) => {
                     if (e.key === 'Enter') saveField('name');
@@ -126,14 +126,14 @@ export const UserProfileTab: React.FC<UserProfileTabProps> = ({
                 <button
                   type="button"
                   onClick={cancelEditing}
-                  className="p-1.5 bg-gray-200 dark:bg-gray-700 text-black dark:text-white neo-border-sm hover:scale-105"
+                  className="p-1.5 bg-gray-200 dark:bg-gray-700 text-ink neo-border-sm hover:scale-105"
                   title="Cancelar"
                 >
                   <X className="w-4 h-4 stroke-[3]" />
                 </button>
               </div>
             ) : (
-              <span className="text-base md:text-lg font-black text-black dark:text-white">
+              <span className="text-base md:text-lg font-black text-ink">
                 {profile.name || 'Estudante'}
               </span>
             )}
@@ -143,10 +143,10 @@ export const UserProfileTab: React.FC<UserProfileTabProps> = ({
             <button
               type="button"
               onClick={() => startEditing('name')}
-              className="p-2 neo-border-sm bg-white dark:bg-[#27272A] hover:bg-[#FFE600] dark:hover:bg-[#FFE600] dark:hover:text-black transition-colors self-start sm:self-auto"
+              className="p-2 neo-border-sm bg-surface hover:bg-[#FFE600] dark:hover:bg-[#FFE600] dark:hover:text-black transition-colors self-start sm:self-auto"
               title="Editar nome"
             >
-              <Pencil className="w-4 h-4 text-black dark:text-gray-200 hover:text-black" />
+              <Pencil className="w-4 h-4 text-ink hover:text-black" />
             </button>
           )}
         </div>
@@ -154,7 +154,7 @@ export const UserProfileTab: React.FC<UserProfileTabProps> = ({
         {/* Grade: Vestibular Alvo e Curso */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {/* 2. Vestibular Alvo */}
-          <div className="p-4 bg-[#F8F5EE] dark:bg-[#202024] neo-border-sm flex flex-col justify-between gap-3">
+          <div className="p-4 bg-page neo-border-sm flex flex-col justify-between gap-3">
             <div className="space-y-1">
               <span className="block text-xs font-black uppercase tracking-wider text-gray-500 dark:text-gray-400">
                 Vestibular
@@ -164,7 +164,7 @@ export const UserProfileTab: React.FC<UserProfileTabProps> = ({
                   <select
                     value={tempExam}
                     onChange={(e) => setTempExam(e.target.value as ExamType)}
-                    className="px-2.5 py-1 text-xs font-black neo-border-sm bg-white dark:bg-[#27272A] text-black dark:text-white focus:outline-none"
+                    className="px-2.5 py-1 text-xs font-black neo-border-sm bg-surface text-ink focus:outline-none"
                     autoFocus
                   >
                     <option value="ENEM">ENEM</option>
@@ -184,7 +184,7 @@ export const UserProfileTab: React.FC<UserProfileTabProps> = ({
                   <button
                     type="button"
                     onClick={cancelEditing}
-                    className="p-1.5 bg-gray-200 dark:bg-gray-700 text-black dark:text-white neo-border-sm hover:scale-105"
+                    className="p-1.5 bg-gray-200 dark:bg-gray-700 text-ink neo-border-sm hover:scale-105"
                     title="Cancelar"
                   >
                     <X className="w-4 h-4 stroke-[3]" />
@@ -192,10 +192,10 @@ export const UserProfileTab: React.FC<UserProfileTabProps> = ({
                 </div>
               ) : (
                 <div className="flex items-center gap-2">
-                  <span className="text-base font-black text-black dark:text-white">
+                  <span className="text-base font-black text-ink">
                     {profile.targetExam}
                   </span>
-                  <span className="px-2 py-0.5 text-[10px] font-black uppercase bg-[#00F0FF] text-black neo-border-sm">
+                  <span className="px-2 py-0.5 text-[10px] font-black uppercase bg-secondary text-ink neo-border-sm">
                     Foco
                   </span>
                 </div>
@@ -207,17 +207,17 @@ export const UserProfileTab: React.FC<UserProfileTabProps> = ({
                 <button
                   type="button"
                   onClick={() => startEditing('targetExam')}
-                  className="p-2 neo-border-sm bg-white dark:bg-[#27272A] hover:bg-[#FFE600] dark:hover:bg-[#FFE600] dark:hover:text-black transition-colors"
+                  className="p-2 neo-border-sm bg-surface hover:bg-[#FFE600] dark:hover:bg-[#FFE600] dark:hover:text-black transition-colors"
                   title="Editar vestibular"
                 >
-                  <Pencil className="w-4 h-4 text-black dark:text-gray-200 hover:text-black" />
+                  <Pencil className="w-4 h-4 text-ink hover:text-black" />
                 </button>
               </div>
             )}
           </div>
 
           {/* 3. Curso Alvo */}
-          <div className="p-4 bg-[#F8F5EE] dark:bg-[#202024] neo-border-sm flex flex-col justify-between gap-3">
+          <div className="p-4 bg-page neo-border-sm flex flex-col justify-between gap-3">
             <div className="space-y-1">
               <span className="block text-xs font-black uppercase tracking-wider text-gray-500 dark:text-gray-400">
                 Curso
@@ -229,7 +229,7 @@ export const UserProfileTab: React.FC<UserProfileTabProps> = ({
                     value={tempCourse}
                     onChange={(e) => setTempCourse(e.target.value)}
                     placeholder="Ex: Medicina, Direito, Computação"
-                    className="px-3 py-1 text-xs font-black neo-border-sm bg-white dark:bg-[#27272A] text-black dark:text-white focus:outline-none w-full"
+                    className="px-3 py-1 text-xs font-black neo-border-sm bg-surface text-ink focus:outline-none w-full"
                     autoFocus
                     onKeyDown={(e) => {
                       if (e.key === 'Enter') saveField('targetCourse');
@@ -247,14 +247,14 @@ export const UserProfileTab: React.FC<UserProfileTabProps> = ({
                   <button
                     type="button"
                     onClick={cancelEditing}
-                    className="p-1.5 bg-gray-200 dark:bg-gray-700 text-black dark:text-white neo-border-sm hover:scale-105"
+                    className="p-1.5 bg-gray-200 dark:bg-gray-700 text-ink neo-border-sm hover:scale-105"
                     title="Cancelar"
                   >
                     <X className="w-4 h-4 stroke-[3]" />
                   </button>
                 </div>
               ) : (
-                <span className="text-base font-black text-black dark:text-white">
+                <span className="text-base font-black text-ink">
                   {profile.targetCourse || 'Não informado'}
                 </span>
               )}
@@ -265,10 +265,10 @@ export const UserProfileTab: React.FC<UserProfileTabProps> = ({
                 <button
                   type="button"
                   onClick={() => startEditing('targetCourse')}
-                  className="p-2 neo-border-sm bg-white dark:bg-[#27272A] hover:bg-[#FFE600] dark:hover:bg-[#FFE600] dark:hover:text-black transition-colors"
+                  className="p-2 neo-border-sm bg-surface hover:bg-[#FFE600] dark:hover:bg-[#FFE600] dark:hover:text-black transition-colors"
                   title="Editar curso"
                 >
-                  <Pencil className="w-4 h-4 text-black dark:text-gray-200 hover:text-black" />
+                  <Pencil className="w-4 h-4 text-ink hover:text-black" />
                 </button>
               </div>
             )}
@@ -276,7 +276,7 @@ export const UserProfileTab: React.FC<UserProfileTabProps> = ({
         </div>
 
         {/* 4. Meta diária */}
-        <div className="p-4 bg-[#F8F5EE] dark:bg-[#202024] neo-border-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="p-4 bg-page neo-border-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div className="space-y-1 flex-1">
             <span className="block text-xs font-black uppercase tracking-wider text-gray-500 dark:text-gray-400">
               Meta diária
@@ -293,7 +293,7 @@ export const UserProfileTab: React.FC<UserProfileTabProps> = ({
                   className="w-48 accent-black cursor-pointer"
                   autoFocus
                 />
-                <span className="text-sm font-black text-black dark:text-white">
+                <span className="text-sm font-black text-ink">
                   {tempGoal} questões/dia
                 </span>
                 <button
@@ -307,7 +307,7 @@ export const UserProfileTab: React.FC<UserProfileTabProps> = ({
                 <button
                   type="button"
                   onClick={cancelEditing}
-                  className="p-1.5 bg-gray-200 dark:bg-gray-700 text-black dark:text-white neo-border-sm hover:scale-105"
+                  className="p-1.5 bg-gray-200 dark:bg-gray-700 text-ink neo-border-sm hover:scale-105"
                   title="Cancelar"
                 >
                   <X className="w-4 h-4 stroke-[3]" />
@@ -315,7 +315,7 @@ export const UserProfileTab: React.FC<UserProfileTabProps> = ({
               </div>
             ) : (
               <div className="flex items-center gap-2">
-                <span className="text-base md:text-lg font-black text-black dark:text-white">
+                <span className="text-base md:text-lg font-black text-ink">
                   {profile.dailyGoalQuestions} questões por dia
                 </span>
                 <span className="text-xs text-gray-500 dark:text-gray-400 font-bold">
@@ -329,39 +329,39 @@ export const UserProfileTab: React.FC<UserProfileTabProps> = ({
             <button
               type="button"
               onClick={() => startEditing('dailyGoal')}
-              className="p-2 neo-border-sm bg-white dark:bg-[#27272A] hover:bg-[#FFE600] dark:hover:bg-[#FFE600] dark:hover:text-black transition-colors self-start sm:self-auto"
+              className="p-2 neo-border-sm bg-surface hover:bg-[#FFE600] dark:hover:bg-[#FFE600] dark:hover:text-black transition-colors self-start sm:self-auto"
               title="Editar meta diária"
             >
-              <Pencil className="w-4 h-4 text-black dark:text-gray-200 hover:text-black" />
+              <Pencil className="w-4 h-4 text-ink hover:text-black" />
             </button>
           )}
         </div>
       </div>
 
       {/* Estatísticas Gerais de Aprendizado */}
-      <div className="bg-white dark:bg-[#18181B] neo-border neo-shadow p-6">
-        <h3 className="text-base font-black uppercase tracking-wider text-black dark:text-white border-b-2 border-black dark:border-gray-700 pb-2 mb-4 flex items-center gap-2">
+      <div className="bg-surface neo-border neo-shadow p-6">
+        <h3 className="text-base font-black uppercase tracking-wider text-ink border-b-2 border-black dark:border-gray-700 pb-2 mb-4 flex items-center gap-2">
           <TrendingUp className="w-4 h-4 text-[#00E599]" />
           Seu progresso
         </h3>
 
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          <div className="p-3 bg-[#F8F5EE] dark:bg-[#202024] neo-border-sm text-center">
+          <div className="p-3 bg-page neo-border-sm text-center">
             <div className="text-xs font-mono uppercase text-gray-500 dark:text-gray-400">XP total</div>
-            <div className="text-lg font-black text-black dark:text-white">{profile.totalXp} XP</div>
+            <div className="text-lg font-black text-ink">{profile.totalXp} XP</div>
           </div>
 
-          <div className="p-3 bg-[#F8F5EE] dark:bg-[#202024] neo-border-sm text-center">
+          <div className="p-3 bg-page neo-border-sm text-center">
             <div className="text-xs font-mono uppercase text-gray-500 dark:text-gray-400">Ofensiva</div>
             <div className="text-lg font-black text-[#FF5A36]">{profile.currentStreak} dias</div>
           </div>
 
-          <div className="p-3 bg-[#F8F5EE] dark:bg-[#202024] neo-border-sm text-center">
+          <div className="p-3 bg-page neo-border-sm text-center">
             <div className="text-xs font-mono uppercase text-gray-500 dark:text-gray-400">Recorde</div>
-            <div className="text-lg font-black text-black dark:text-white">{profile.longestStreak} dias</div>
+            <div className="text-lg font-black text-ink">{profile.longestStreak} dias</div>
           </div>
 
-          <div className="p-3 bg-[#F8F5EE] dark:bg-[#202024] neo-border-sm text-center">
+          <div className="p-3 bg-page neo-border-sm text-center">
             <div className="text-xs font-mono uppercase text-gray-500 dark:text-gray-400">Nota TRI estimada</div>
             <div className="text-lg font-black text-[#00AA44] dark:text-[#00E599]">
               {profile.estimatedTri ? `${profile.estimatedTri.toFixed(1)} pts` : '—'}

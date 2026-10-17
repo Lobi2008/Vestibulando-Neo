@@ -25,6 +25,7 @@ import {
 } from 'lucide-react';
 import type { UserProfile, UserAttempt, Question } from '../../types/index.ts';
 import { estimateEnemTri, calculateUerjScore } from '../../services/tri/triEngine.ts';
+import { EvolutionChart } from './EvolutionChart.tsx';
 import { generateSqliteExportScript } from '../../services/storage/localDatabase.ts';
 
 interface PerformanceDashboardProps {
@@ -116,6 +117,9 @@ export const PerformanceDashboard: React.FC<PerformanceDashboardProps> = ({
         questionId: att.questionId,
         vestibular: att.vestibular,
         isCorrect: att.isCorrect,
+        discipline: att.discipline,
+        topic: att.topic,
+        timeSpentSeconds: att.timeSpentSeconds,
         accuracyPercent: currentAvgAccuracy,
         triScore: currentTri,
         timestamp: att.timestamp,
@@ -193,13 +197,13 @@ export const PerformanceDashboard: React.FC<PerformanceDashboardProps> = ({
   return (
     <div className="space-y-6">
       {/* Título da Seção */}
-      <div className="flex flex-wrap items-center justify-between gap-3 bg-white neo-border neo-shadow p-4">
+      <div className="flex flex-wrap items-center justify-between gap-3 bg-surface neo-border neo-shadow p-4">
         <div>
-          <h2 className="text-2xl md:text-3xl font-black text-black flex items-center gap-2">
+          <h2 className="text-2xl md:text-3xl font-black text-ink flex items-center gap-2">
             <BarChart2 className="w-6 h-6 text-[#FF5A36]" />
             Desempenho
           </h2>
-          <p className="text-sm font-bold text-gray-700">
+          <p className="text-sm font-bold text-gray-700 dark:text-ink-muted">
             Sua evolução e seus acertos por conteúdo.
           </p>
         </div>
@@ -218,30 +222,30 @@ export const PerformanceDashboard: React.FC<PerformanceDashboardProps> = ({
       {/* Grid Superior: 4 Indicadores Chave */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* NOTA TRI */}
-        <div className="bg-[#FFE600] neo-border neo-shadow p-4">
+        <div className="bg-primary neo-border neo-shadow p-4">
           <div className="flex items-center justify-between text-xs font-black mb-1">
             <span>NOTA ENEM (TRI)</span>
-            <Compass className="w-4 h-4 text-black" />
+            <Compass className="w-4 h-4 text-ink" />
           </div>
-          <div className="text-3xl md:text-4xl font-black text-black">
+          <div className="text-3xl md:text-4xl font-black text-ink">
             {enemStats.total > 0 ? enemStats.triResult.enemScore.toFixed(1) : '500.0'}
           </div>
-          <div className="text-[11px] font-bold text-black mt-2 pt-2 border-t border-black flex justify-between">
+          <div className="text-[11px] font-bold text-ink mt-2 pt-2 border-t border-black flex justify-between">
             <span>Coerência:</span>
             <span className="font-mono">{enemStats.triResult.coherenceScore}%</span>
           </div>
-          <div className="text-xs text-gray-800 font-medium mt-1">
+          <div className="text-xs text-gray-800 dark:text-ink font-medium mt-1">
             {enemStats.total} questões do ENEM
           </div>
         </div>
 
         {/* CONCEITO UERJ */}
-        <div className="bg-[#00F0FF] neo-border neo-shadow p-4">
+        <div className="bg-secondary neo-border neo-shadow p-4">
           <div className="flex items-center justify-between text-xs font-black mb-1">
             <span>CONCEITO UERJ</span>
-            <Target className="w-4 h-4 text-black" />
+            <Target className="w-4 h-4 text-ink" />
           </div>
-          <div className="text-3xl md:text-4xl font-black text-black flex items-baseline gap-2">
+          <div className="text-3xl md:text-4xl font-black text-ink flex items-baseline gap-2">
             <span>Conceito {uerjStats.scoreResult.concept}</span>
             {uerjStats.scoreResult.bonusPoints > 0 && (
               <span className="text-xs font-extrabold bg-black text-white px-1.5 py-0.5">
@@ -249,11 +253,11 @@ export const PerformanceDashboard: React.FC<PerformanceDashboardProps> = ({
               </span>
             )}
           </div>
-          <div className="text-[11px] font-bold text-black mt-2 pt-2 border-t border-black flex justify-between">
+          <div className="text-[11px] font-bold text-ink mt-2 pt-2 border-t border-black flex justify-between">
             <span>Aproveitamento:</span>
             <span className="font-mono">{uerjStats.scoreResult.percentage}%</span>
           </div>
-          <div className="text-xs text-gray-800 font-medium mt-1">
+          <div className="text-xs text-gray-800 dark:text-ink font-medium mt-1">
             {uerjStats.correct} acertos de {uerjStats.total} questões
           </div>
         </div>
@@ -280,15 +284,15 @@ export const PerformanceDashboard: React.FC<PerformanceDashboardProps> = ({
         </div>
 
         {/* TEMPO MÉDIO */}
-        <div className="bg-white neo-border neo-shadow p-4">
-          <div className="flex items-center justify-between text-xs font-black mb-1 text-gray-700">
+        <div className="bg-surface neo-border neo-shadow p-4">
+          <div className="flex items-center justify-between text-xs font-black mb-1 text-gray-700 dark:text-ink-muted">
             <span>TEMPO POR QUESTÃO</span>
-            <Clock className="w-4 h-4 text-black" />
+            <Clock className="w-4 h-4 text-ink" />
           </div>
-          <div className="text-3xl md:text-4xl font-black text-black">
+          <div className="text-3xl md:text-4xl font-black text-ink">
             {Math.floor(avgTimeTotal / 60)}m {avgTimeTotal % 60}s
           </div>
-          <div className="text-[11px] font-bold text-gray-700 mt-2 pt-2 border-t border-black flex justify-between">
+          <div className="text-[11px] font-bold text-gray-700 dark:text-ink-muted mt-2 pt-2 border-t border-black flex justify-between">
             <span>Ritmo ideal:</span>
             <span className="font-mono text-green-700">até 3 min</span>
           </div>
@@ -301,141 +305,35 @@ export const PerformanceDashboard: React.FC<PerformanceDashboardProps> = ({
       {/* =========================================================================
           5.1: GRÁFICO INTERATIVO DE EVOLUÇÃO TEMPORAL (TRI ENEM E TAXA DE ACERTO)
          ========================================================================= */}
-      <div className="bg-white neo-border neo-shadow p-5">
-        <div className="flex flex-wrap items-center justify-between gap-3 pb-3 mb-4 border-b-2 border-black">
+      <div className="bg-surface neo-border neo-shadow p-4">
+        <div className="flex flex-wrap items-center justify-between gap-3 pb-2 mb-3 border-b-2 border-black">
           <div>
-            <h3 className="text-base font-black uppercase tracking-wider text-black flex items-center gap-1.5">
+            <h3 className="text-base font-black uppercase tracking-wider text-ink flex items-center gap-1.5">
               <TrendingUp className="w-4 h-4 text-[#FF5A36]" />
               <span>Evolução</span>
             </h3>
-            <p className="text-sm text-gray-600">
+            <p className="text-sm text-gray-600 dark:text-ink-muted">
               Como sua nota e seus acertos mudaram a cada questão.
             </p>
           </div>
 
-          <div className="flex items-center gap-4 text-xs font-extrabold">
-            <span className="flex items-center gap-1.5">
-              <span className="w-3.5 h-3.5 bg-[#FFE600] border-2 border-black inline-block" />
-              <span>Nota TRI</span>
-            </span>
-            <span className="flex items-center gap-1.5">
-              <span className="w-3.5 h-3.5 bg-[#00F0FF] border-2 border-black inline-block" />
-              <span>Taxa de Acerto (%)</span>
-            </span>
-          </div>
         </div>
 
-        {evolutionSeries.length === 0 ? (
-          <div className="text-center py-12 text-gray-400 text-xs">
-            Resolva algumas questões para ver o gráfico.
-          </div>
-        ) : (
-          <div className="w-full overflow-x-auto">
-            {/* SVG Chart Neobrutalista Proporcional */}
-            <div className="min-w-[650px] h-[300px] relative bg-[#FAF8F5] neo-border-sm p-5 flex flex-col justify-between">
-              <div className="flex justify-between items-center text-xs font-mono font-bold text-black border-b border-gray-300 pb-2">
-                <span>Nota: 300–900 • Acertos: 0–100%</span>
-              </div>
-              <svg className="w-full h-[190px] overflow-visible my-1" viewBox="0 0 650 180" preserveAspectRatio="xMidYMid meet">
-                {/* Linhas de Grade de Fundo */}
-                <line x1="15" y1="20" x2="635" y2="20" stroke="#D1C7B7" strokeDasharray="3 3" strokeWidth="1" />
-                <line x1="15" y1="70" x2="635" y2="70" stroke="#D1C7B7" strokeDasharray="3 3" strokeWidth="1" />
-                <line x1="15" y1="120" x2="635" y2="120" stroke="#D1C7B7" strokeDasharray="3 3" strokeWidth="1" />
-                <line x1="15" y1="160" x2="635" y2="160" stroke="#111111" strokeWidth="2.5" />
-                <line x1="15" y1="20" x2="15" y2="160" stroke="#111111" strokeWidth="2" />
-
-                {/* Polilinha 1: TAXA DE ACERTO (0% a 100% mapeado em Y de 160 a 20) */}
-                {evolutionSeries.length > 1 && (
-                  <polyline
-                    fill="none"
-                    stroke="#00F0FF"
-                    strokeWidth="4"
-                    points={evolutionSeries
-                      .map((pt, idx) => {
-                        const x = 15 + (idx / (evolutionSeries.length - 1)) * 620;
-                        const y = 160 - (pt.accuracyPercent / 100) * 140;
-                        return `${x},${y}`;
-                      })
-                      .join(' ')}
-                  />
-                )}
-
-                {/* Polilinha 2: NOTA TRI ENEM (350 a 850 mapeado em Y de 160 a 20) */}
-                {evolutionSeries.length > 1 && (
-                  <polyline
-                    fill="none"
-                    stroke="#111111"
-                    strokeWidth="3.5"
-                    points={evolutionSeries
-                      .map((pt, idx) => {
-                        const x = 15 + (idx / (evolutionSeries.length - 1)) * 620;
-                        const normalizedTri = Math.max(0, Math.min(1, (pt.triScore - 350) / 500));
-                        const y = 160 - normalizedTri * 140;
-                        return `${x},${y}`;
-                      })
-                      .join(' ')}
-                  />
-                )}
-
-                {/* Pontos Interativos no Gráfico */}
-                {evolutionSeries.map((pt, idx) => {
-                  const x =
-                    evolutionSeries.length === 1
-                      ? 325
-                      : 15 + (idx / (evolutionSeries.length - 1)) * 620;
-                  const yAcc = 160 - (pt.accuracyPercent / 100) * 140;
-                  const normalizedTri = Math.max(0, Math.min(1, (pt.triScore - 350) / 500));
-                  const yTri = 160 - normalizedTri * 140;
-
-                  return (
-                    <g key={idx}>
-                      {/* Ponto Taxa de Acerto */}
-                      <circle
-                        cx={x}
-                        cy={yAcc}
-                        r="5.5"
-                        fill="#00F0FF"
-                        stroke="#111111"
-                        strokeWidth="2.5"
-                      />
-                      {/* Ponto Nota TRI */}
-                      <rect
-                        x={x - 4.5}
-                        y={yTri - 4.5}
-                        width="9"
-                        height="9"
-                        fill="#FFE600"
-                        stroke="#111111"
-                        strokeWidth="2.5"
-                      />
-                    </g>
-                  );
-                })}
-              </svg>
-
-              {/* Rótulos dos Eixos */}
-              <div className="flex justify-between items-center text-xs font-mono font-bold text-black border-t border-gray-300 pt-2">
-                <span>Início (Q1)</span>
-                <span className="text-gray-600 text-[11px]">Questões em ordem</span>
-                <span>Última (Q{evolutionSeries.length})</span>
-              </div>
-            </div>
-          </div>
-        )}
+        <EvolutionChart points={evolutionSeries} onSelectQuestion={onSelectQuestion} />
       </div>
 
       {/* =========================================================================
           5.2: EVOLUÇÃO POR DISCIPLINA COM ACORDEÃO EXPANSÍVEL POR CONTEÚDO ESPECÍFICO
          ========================================================================= */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 bg-white neo-border neo-shadow p-5">
+        <div className="lg:col-span-2 bg-surface neo-border neo-shadow p-5">
           <div className="flex flex-wrap items-center justify-between pb-2 mb-4 border-b-2 border-black">
             <div>
-              <h3 className="text-base font-black uppercase tracking-wider text-black flex items-center gap-1.5">
-                <Layers className="w-4 h-4 text-black" />
+              <h3 className="text-base font-black uppercase tracking-wider text-ink flex items-center gap-1.5">
+                <Layers className="w-4 h-4 text-ink" />
                 <span>Por disciplina</span>
               </h3>
-              <p className="text-sm text-gray-600">
+              <p className="text-sm text-gray-600 dark:text-ink-muted">
                 Clique em uma matéria para ver os conteúdos.
               </p>
             </div>
@@ -454,17 +352,17 @@ export const PerformanceDashboard: React.FC<PerformanceDashboardProps> = ({
                 const isExpanded = !!expandedDisciplines[item.discipline];
 
                 return (
-                  <div key={item.discipline} className="neo-border-sm bg-[#FAFAFA] overflow-hidden">
+                  <div key={item.discipline} className="neo-border-sm bg-[#FAFAFA] dark:bg-surface-2 overflow-hidden">
                     {/* Barra da Disciplina (Clicável para expandir) */}
                     <button
                       type="button"
                       onClick={() => toggleDisciplineExpand(item.discipline)}
-                      className="w-full p-3.5 text-left bg-white hover:bg-yellow-50 flex flex-col sm:flex-row sm:items-center justify-between gap-2 transition-all cursor-pointer"
+                      className="w-full p-3.5 text-left bg-surface hover:bg-yellow-50 flex flex-col sm:flex-row sm:items-center justify-between gap-2 transition-colors cursor-pointer"
                     >
                       <div className="flex items-center gap-2">
                         <div
                           className={`p-1 neo-border-sm ${
-                            isExpanded ? 'bg-black text-white' : 'bg-gray-100 text-black'
+                            isExpanded ? 'bg-black text-white' : 'bg-gray-100 text-ink'
                           }`}
                         >
                           {isExpanded ? (
@@ -474,7 +372,7 @@ export const PerformanceDashboard: React.FC<PerformanceDashboardProps> = ({
                           )}
                         </div>
                         <div>
-                          <span className="text-sm font-black text-gray-900">
+                          <span className="text-sm font-black text-gray-900 dark:text-ink">
                             {item.discipline}
                           </span>
                           <span className="text-xs text-gray-500 ml-2 font-mono">
@@ -484,16 +382,16 @@ export const PerformanceDashboard: React.FC<PerformanceDashboardProps> = ({
                       </div>
 
                       <div className="flex items-center gap-3">
-                        <span className="font-mono text-xs font-black text-gray-800">
+                        <span className="font-mono text-xs font-black text-gray-800 dark:text-ink">
                           {item.correct}/{item.total} acertos ({item.rate}%)
                         </span>
-                        <div className="w-28 bg-[#E5E5E5] h-3.5 neo-border-sm overflow-hidden flex">
+                        <div className="w-28 bg-[#E5E5E5] dark:bg-surface-2 h-3.5 neo-border-sm overflow-hidden flex">
                           <div
-                            className={`h-full transition-all duration-500 ${
+                            className={`h-full transition-colors duration-500 ${
                               item.rate >= 70
                                 ? 'bg-[#00E599]'
                                 : item.rate >= 50
-                                ? 'bg-[#FFE600]'
+                                ? 'bg-primary'
                                 : 'bg-[#FF3366]'
                             }`}
                             style={{ width: `${Math.max(5, item.rate)}%` }}
@@ -504,8 +402,8 @@ export const PerformanceDashboard: React.FC<PerformanceDashboardProps> = ({
 
                     {/* Conteúdos Específicos Detalhados (Acordeão Expandido) */}
                     {isExpanded && (
-                      <div className="p-4 bg-[#F5F2EA] border-t-2 border-black space-y-3">
-                        <span className="text-[11px] font-black uppercase text-gray-700 tracking-wider block">
+                      <div className="p-4 bg-surface-2 border-t-2 border-black space-y-3">
+                        <span className="text-[11px] font-black uppercase text-gray-700 dark:text-ink-muted tracking-wider block">
                           Conteúdos de {item.discipline}:
                         </span>
 
@@ -513,24 +411,24 @@ export const PerformanceDashboard: React.FC<PerformanceDashboardProps> = ({
                           {item.topics.map((top) => (
                             <div
                               key={top.topicName}
-                              className="bg-white p-2.5 neo-border-sm flex flex-col justify-between"
+                              className="bg-surface p-2.5 neo-border-sm flex flex-col justify-between"
                             >
                               <div className="flex items-center justify-between text-xs font-bold mb-1">
-                                <span className="text-gray-900 truncate" title={top.topicName}>
+                                <span className="text-gray-900 dark:text-ink truncate" title={top.topicName}>
                                   📌 {top.topicName}
                                 </span>
-                                <span className="font-mono text-[11px] font-black text-gray-700">
+                                <span className="font-mono text-[11px] font-black text-gray-700 dark:text-ink-muted">
                                   {top.correct}/{top.total} ({top.rate}%)
                                 </span>
                               </div>
 
-                              <div className="w-full bg-[#E5E5E5] h-2 neo-border-sm overflow-hidden">
+                              <div className="w-full bg-[#E5E5E5] dark:bg-surface-2 h-2 neo-border-sm overflow-hidden">
                                 <div
-                                  className={`h-full transition-all duration-300 ${
+                                  className={`h-full transition-colors duration-300 ${
                                     top.rate >= 70
                                       ? 'bg-[#00E599]'
                                       : top.rate >= 50
-                                      ? 'bg-[#FFE600]'
+                                      ? 'bg-primary'
                                       : 'bg-[#FF3366]'
                                   }`}
                                   style={{ width: `${Math.max(5, top.rate)}%` }}
@@ -549,8 +447,8 @@ export const PerformanceDashboard: React.FC<PerformanceDashboardProps> = ({
         </div>
 
         {/* Ofensiva (Streak) & Resumo do Perfil */}
-        <div className="bg-[#FFFDF5] neo-border neo-shadow p-5 space-y-4">
-          <h3 className="text-base font-black uppercase tracking-wider text-black pb-2 border-b-2 border-black flex items-center gap-1.5">
+        <div className="bg-[#FFFDF5] dark:bg-surface-2 neo-border neo-shadow p-5 space-y-4">
+          <h3 className="text-base font-black uppercase tracking-wider text-ink pb-2 border-b-2 border-black flex items-center gap-1.5">
             <Flame className="w-4 h-4 text-orange-500" />
             <span>Ofensiva e metas</span>
           </h3>
@@ -565,18 +463,18 @@ export const PerformanceDashboard: React.FC<PerformanceDashboardProps> = ({
             </div>
           </div>
 
-          <div className="space-y-2 text-xs font-bold bg-white p-3 neo-border-sm">
+          <div className="space-y-2 text-xs font-bold bg-surface p-3 neo-border-sm">
             <div className="flex justify-between py-1 border-b border-gray-200">
-              <span className="text-gray-600">Vestibular:</span>
-              <span className="font-black text-black">{profile.targetExam}</span>
+              <span className="text-gray-600 dark:text-ink-muted">Vestibular:</span>
+              <span className="font-black text-ink">{profile.targetExam}</span>
             </div>
             <div className="flex justify-between py-1 border-b border-gray-200">
-              <span className="text-gray-600">Curso:</span>
-              <span className="font-black text-black">{profile.targetCourse}</span>
+              <span className="text-gray-600 dark:text-ink-muted">Curso:</span>
+              <span className="font-black text-ink">{profile.targetCourse}</span>
             </div>
             <div className="flex justify-between py-1">
-              <span className="text-gray-600">Meta Diária:</span>
-              <span className="font-black text-black">
+              <span className="text-gray-600 dark:text-ink-muted">Meta Diária:</span>
+              <span className="font-black text-ink">
                 {attempts.length}/{profile.dailyGoalQuestions} questões
               </span>
             </div>
@@ -585,8 +483,8 @@ export const PerformanceDashboard: React.FC<PerformanceDashboardProps> = ({
       </div>
 
       {/* Histórico Recente de Questões Resolvidas */}
-      <div className="bg-white neo-border neo-shadow p-5">
-        <h3 className="text-base font-black uppercase tracking-wider text-black pb-2 mb-3 border-b-2 border-black flex items-center justify-between">
+      <div className="bg-surface neo-border neo-shadow p-5">
+        <h3 className="text-base font-black uppercase tracking-wider text-ink pb-2 mb-3 border-b-2 border-black flex items-center justify-between">
           <span>Histórico ({attempts.length})</span>
           <span className="text-xs text-gray-500 font-normal">Salvo neste computador</span>
         </h3>
@@ -634,7 +532,7 @@ export const PerformanceDashboard: React.FC<PerformanceDashboardProps> = ({
                       <button
                         type="button"
                         onClick={() => onSelectQuestion(att.questionId)}
-                        className="px-2 py-1 bg-white hover:bg-black hover:text-white neo-border-sm font-bold text-[10px]"
+                        className="px-2 py-1 bg-surface hover:bg-black hover:text-white neo-border-sm font-bold text-[10px]"
                       >
                         Rever
                       </button>

@@ -25,6 +25,7 @@ import { SpacedRepetitionDeck } from './components/srs/SpacedRepetitionDeck.tsx'
 import { PerformanceDashboard } from './components/dashboard/PerformanceDashboard.tsx';
 import { DataSyncHub } from './components/sync/DataSyncHub.tsx';
 import { UserProfileTab } from './components/profile/UserProfileTab.tsx';
+import { ShortcutsFooter } from './components/common/ShortcutsFooter.tsx';
 
 import type { Question, UserAttempt, UserProfile, FilterState, DrawingStroke, SrsItemData, SrsRating } from './types/index.ts';
 import { 
@@ -43,6 +44,15 @@ import {
 } from './services/storage/localDatabase.ts';
 import { calculateNextSrsSchedule, isSrsItemDue, formatDateYmd } from './services/srs/srsEngine.ts';
 import { RotateCcw, AlertCircle, ArrowLeft } from 'lucide-react';
+
+const DEFAULT_FILTERS: FilterState = {
+  vestibular: 'TODOS',
+  area: 'TODAS',
+  discipline: 'TODAS',
+  topic: 'TODOS',
+  searchQuery: '',
+  status: 'TODAS',
+};
 
 export default function App() {
   const [questions, setQuestions] = useState<Question[]>(() => getStoredQuestions());
@@ -65,37 +75,23 @@ export default function App() {
 
   useEffect(() => {
     try {
-      if (isDarkMode) {
-        document.documentElement.classList.add('dark');
-        document.body.classList.add('dark');
-        localStorage.setItem('vestibulando_dark_mode', 'true');
-      } else {
-        document.documentElement.classList.remove('dark');
-        document.body.classList.remove('dark');
-        localStorage.setItem('vestibulando_dark_mode', 'false');
-      }
+      document.documentElement.classList.toggle('dark', isDarkMode);
+      localStorage.setItem('vestibulando_dark_mode', String(isDarkMode));
     } catch (e) {
       console.error('Falha ao sincronizar classe do modo escuro:', e);
     }
   }, [isDarkMode]);
 
-  const handleToggleDarkMode = () => {
+  const handleToggleDarkMode = useCallback(() => {
     setIsDarkMode((prev) => !prev);
-  };
+  }, []);
 
   // Aba ativa na navegação principal
   const [activeTab, setActiveTab] = useState<NavTabType>('home');
   const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
 
   // Filtros da Taxonomia Hierárquica
-  const [filters, setFilters] = useState<FilterState>({
-    vestibular: 'TODOS',
-    area: 'TODAS',
-    discipline: 'TODAS',
-    topic: 'TODOS',
-    searchQuery: '',
-    status: 'TODAS',
-  });
+  const [filters, setFilters] = useState<FilterState>(DEFAULT_FILTERS);
 
   // IDs das questões congeladas da sessão ativa
   const [activeSessionIds, setActiveSessionIds] = useState<string[] | null>(null);
@@ -229,14 +225,7 @@ export default function App() {
 
   // Abrir questão diretamente a partir de um rascunho
   const handleOpenQuestionWithDraft = useCallback((questionId: string) => {
-    setFilters({
-      vestibular: 'TODOS',
-      area: 'TODAS',
-      discipline: 'TODAS',
-      topic: 'TODOS',
-      searchQuery: '',
-      status: 'TODAS',
-    });
+    setFilters(DEFAULT_FILTERS);
     setSessionLimit(null);
     setActiveSessionIds(null);
     const idx = questions.findIndex((q) => q.id === questionId);
@@ -246,28 +235,29 @@ export default function App() {
     setActiveTab('questions');
   }, [questions]);
 
-  const handleNextQuestion = () => {
-    if (currentQuestionIndex < filteredQuestions.length - 1) {
-      setCurrentQuestionIndex((prev) => prev + 1);
-    }
-  };
+  const filteredCount = filteredQuestions.length;
 
-  const handlePrevQuestion = () => {
-    if (currentQuestionIndex > 0) {
-      setCurrentQuestionIndex((prev) => prev - 1);
-    }
-  };
+  const handleNextQuestion = useCallback(() => {
+    setCurrentQuestionIndex((prev) => (prev < filteredCount - 1 ? prev + 1 : prev));
+  }, [filteredCount]);
+
+  const handlePrevQuestion = useCallback(() => {
+    setCurrentQuestionIndex((prev) => (prev > 0 ? prev - 1 : prev));
+  }, []);
+
+  const handleFilterChange = useCallback((updated: Partial<FilterState>) => {
+    setFilters((prev) => ({ ...prev, ...updated }));
+  }, []);
+
+  const handleResetFilters = useCallback(() => {
+    setSessionLimit(null);
+    setActiveSessionIds(null);
+    setFilters(DEFAULT_FILTERS);
+  }, []);
 
   // Inicia revisão de questão a partir do SRS Deck
   const handleStartReviewQuestionFromSrs = (questionId: string) => {
-    setFilters({
-      vestibular: 'TODOS',
-      area: 'TODAS',
-      discipline: 'TODAS',
-      topic: 'TODOS',
-      searchQuery: '',
-      status: 'TODAS',
-    });
+    setFilters(DEFAULT_FILTERS);
     setSessionLimit(null);
     setActiveSessionIds(null);
     const idx = questions.findIndex((q) => q.id === questionId);
@@ -281,14 +271,7 @@ export default function App() {
   const handleReviewDueDeck = (dueIds: string[]) => {
     const matching = questions.filter((q) => dueIds.includes(q.id));
     if (matching.length > 0) {
-      setFilters({
-        vestibular: 'TODOS',
-        area: 'TODAS',
-        discipline: 'TODAS',
-        topic: 'TODOS',
-        searchQuery: '',
-        status: 'TODAS',
-      });
+      setFilters(DEFAULT_FILTERS);
       setSessionLimit(dueIds.length);
       setActiveSessionIds(dueIds);
       setCurrentQuestionIndex(0);
@@ -298,14 +281,7 @@ export default function App() {
 
   // Seleciona questão diretamente a partir do Dashboard
   const handleSelectQuestionFromDashboard = (questionId: string) => {
-    setFilters({
-      vestibular: 'TODOS',
-      area: 'TODAS',
-      discipline: 'TODAS',
-      topic: 'TODOS',
-      searchQuery: '',
-      status: 'TODAS',
-    });
+    setFilters(DEFAULT_FILTERS);
     setSessionLimit(null);
     setActiveSessionIds(null);
     const idx = questions.findIndex((q) => q.id === questionId);
@@ -324,7 +300,7 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#F8F5EE] dark:bg-[#0E0E10] text-[#111111] dark:text-[#F5F2EA] antialiased transition-colors">
+    <div className="min-h-screen flex flex-col bg-page text-ink antialiased transition-colors">
       {/* Barra de Título Windows 11 */}
       <WindowTitleBar
         isFullscreen={isFullscreen}
@@ -374,7 +350,7 @@ export default function App() {
           <div>
             {/* Barra de retorno se estiver em sessão personalizada ativa */}
             {sessionLimit && (
-              <div className="mb-3 flex items-center justify-between bg-[#FFE600] px-3 py-2 neo-border neo-shadow-sm text-xs font-black text-black">
+              <div className="mb-3 flex items-center justify-between bg-primary px-3 py-2 neo-border neo-shadow-sm text-xs font-black text-ink">
                 <span>🎯 Sessão Personalizada Ativa ({filteredQuestions.length} questões)</span>
                 <button
                   type="button"
@@ -395,20 +371,9 @@ export default function App() {
             <TaxonomyFilterBar
               questions={questions}
               filters={filters}
-              onFilterChange={(updated) => setFilters((prev) => ({ ...prev, ...updated }))}
-              onResetFilters={() => {
-                setSessionLimit(null);
-                setActiveSessionIds(null);
-                setFilters({
-                  vestibular: 'TODOS',
-                  area: 'TODAS',
-                  discipline: 'TODAS',
-                  topic: 'TODOS',
-                  searchQuery: '',
-                  status: 'TODAS',
-                });
-              }}
-              filteredCount={filteredQuestions.length}
+              onFilterChange={handleFilterChange}
+              onResetFilters={handleResetFilters}
+              filteredCount={filteredCount}
             />
 
             {/* Questão Atual */}
@@ -430,29 +395,18 @@ export default function App() {
                 onRascunhoActiveChange={setIsRascunhoActive}
               />
             ) : (
-              <div className="bg-white dark:bg-[#18181B] neo-border neo-shadow p-8 text-center space-y-4">
+              <div className="bg-surface neo-border neo-shadow p-8 text-center space-y-4">
                 <AlertCircle className="w-12 h-12 text-[#FF5A36] mx-auto" />
-                <h3 className="text-lg font-black text-black dark:text-white">
+                <h3 className="text-lg font-black text-ink">
                   Nenhuma questão encontrada com os filtros selecionados
                 </h3>
-                <p className="text-xs text-gray-600 dark:text-gray-400 max-w-md mx-auto">
+                <p className="text-xs text-gray-600 dark:text-ink-muted max-w-md mx-auto">
                   Tente alterar os filtros de vestibular, tema/área ou conteúdo específico.
                 </p>
                 <button
                   type="button"
-                  onClick={() => {
-                    setSessionLimit(null);
-                    setActiveSessionIds(null);
-                    setFilters({
-                      vestibular: 'TODOS',
-                      area: 'TODAS',
-                      discipline: 'TODAS',
-                      topic: 'TODOS',
-                      searchQuery: '',
-                      status: 'TODAS',
-                    });
-                  }}
-                  className="px-4 py-2 text-xs font-black neo-btn bg-[#FFE600] text-black inline-flex items-center gap-1.5"
+                  onClick={handleResetFilters}
+                  className="px-4 py-2 text-xs font-black neo-btn bg-primary text-ink inline-flex items-center gap-1.5"
                 >
                   <RotateCcw className="w-4 h-4" />
                   <span>Restaurar Todos os Filtros</span>
@@ -514,26 +468,11 @@ export default function App() {
         )}
       </main>
 
-      {/* Rodapé Desktop */}
-      <footer className="bg-white dark:bg-[#18181B] border-t-3 border-black dark:border-gray-700 py-3 px-4 text-center text-xs font-bold text-gray-700 dark:text-gray-300 transition-colors">
-        <div className="max-w-7xl mx-auto flex items-center justify-end gap-3 text-xs font-mono">
-          {activeTab === 'questions' && currentQuestion && (
-            <>
-              <span>[A-E] Alternativas</span>
-              <span>•</span>
-              <span>[S] Pular Questão</span>
-              <span>•</span>
-              <span>[R] Rascunho Stylus</span>
-            </>
-          )}
-          {activeTab === 'questions' && currentQuestion && isRascunhoActive && (
-            <span>•</span>
-          )}
-          {isRascunhoActive && (
-            <span>[CTRL+Z] Desfazer</span>
-          )}
-        </div>
-      </footer>
+      {/* Rodapé de atalhos */}
+      <ShortcutsFooter
+        showQuestionKeys={activeTab === 'questions' && !!currentQuestion}
+        showDrawKeys={isRascunhoActive}
+      />
     </div>
   );
 }

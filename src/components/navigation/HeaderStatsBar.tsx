@@ -32,7 +32,7 @@ interface HeaderStatsBarProps {
   onToggleDarkMode?: () => void;
 }
 
-export const HeaderStatsBar: React.FC<HeaderStatsBarProps> = ({
+const HeaderStatsBarComponent: React.FC<HeaderStatsBarProps> = ({
   profile,
   activeTab,
   onSelectTab,
@@ -47,7 +47,7 @@ export const HeaderStatsBar: React.FC<HeaderStatsBarProps> = ({
   const xpPercent = Math.min(100, Math.round((xpInCurrentLevel / 300) * 100));
 
   return (
-    <header className="bg-[#FFE600] dark:bg-[#1E1E24] border-b-4 border-[#111111] dark:border-[#38383F] px-4 py-3 neo-shadow transition-colors">
+    <header className="bg-primary border-b-4 border-[#111111] dark:border-[#38383F] px-4 py-3 neo-shadow transition-colors">
       <div className="max-w-[98.5%] 2xl:max-w-[99.5%] mx-auto flex flex-col md:flex-row md:items-center justify-between gap-3">
         {/* Lado Esquerdo: Marca do Aplicativo */}
         <div 
@@ -75,7 +75,7 @@ export const HeaderStatsBar: React.FC<HeaderStatsBarProps> = ({
             <button
               type="button"
               onClick={onToggleDarkMode}
-              className="bg-white dark:bg-[#27272A] text-black dark:text-yellow-300 p-2 neo-border neo-shadow-sm hover:scale-105 transition-transform"
+              className="bg-surface text-ink dark:text-yellow-300 p-2 neo-border neo-shadow-sm hover:scale-105 transition-transform"
               title={isDarkMode ? 'Modo claro' : 'Modo escuro'}
               aria-label="Alternar Modo Escuro"
             >
@@ -96,7 +96,7 @@ export const HeaderStatsBar: React.FC<HeaderStatsBarProps> = ({
           </div>
 
           {/* Nível e XP */}
-          <div className="bg-white dark:bg-[#27272A] px-3 py-1.5 neo-border neo-shadow-sm flex items-center gap-2">
+          <div className="bg-surface px-3 py-1.5 neo-border neo-shadow-sm flex items-center gap-2">
             <Award className="w-5 h-5 text-[#3B82F6] stroke-[2.5]" />
             <div>
               <div className="flex items-center justify-between gap-2 text-xs font-black">
@@ -105,7 +105,7 @@ export const HeaderStatsBar: React.FC<HeaderStatsBarProps> = ({
               </div>
               <div className="w-24 bg-gray-200 dark:bg-gray-700 h-2 neo-border-sm overflow-hidden mt-0.5">
                 <div 
-                  className="bg-[#00E599] h-full transition-all duration-300" 
+                  className="bg-[#00E599] h-full transition-colors duration-300" 
                   style={{ width: `${xpPercent}%` }}
                 />
               </div>
@@ -113,7 +113,7 @@ export const HeaderStatsBar: React.FC<HeaderStatsBarProps> = ({
           </div>
 
           {/* Vestibular Alvo */}
-          <div className="hidden sm:flex items-center gap-1.5 bg-[#00F0FF] text-black px-2.5 py-1.5 neo-border neo-shadow-sm text-xs font-black">
+          <div className="hidden sm:flex items-center gap-1.5 bg-secondary text-ink px-2.5 py-1.5 neo-border neo-shadow-sm text-xs font-black">
             <Target className="w-4 h-4" />
             <span>Foco: {profile.targetExam}</span>
           </div>
@@ -128,7 +128,7 @@ export const HeaderStatsBar: React.FC<HeaderStatsBarProps> = ({
           className={`px-4 py-2 text-sm font-extrabold neo-btn flex items-center gap-1.5 ${
             activeTab === 'home'
               ? 'bg-[#111111] text-white dark:bg-[#00F0FF] dark:text-black'
-              : 'bg-white text-black hover:bg-yellow-100 dark:bg-[#27272A] dark:text-white dark:hover:bg-gray-700'
+              : 'bg-surface text-ink hover:bg-yellow-100 dark:hover:bg-gray-700'
           }`}
         >
           <Play className="w-4 h-4 fill-current" />
@@ -141,7 +141,7 @@ export const HeaderStatsBar: React.FC<HeaderStatsBarProps> = ({
           className={`px-4 py-2 text-sm font-extrabold neo-btn flex items-center gap-1.5 ${
             activeTab === 'questions'
               ? 'bg-[#111111] text-white dark:bg-[#00F0FF] dark:text-black'
-              : 'bg-white text-black hover:bg-yellow-100 dark:bg-[#27272A] dark:text-white dark:hover:bg-gray-700'
+              : 'bg-surface text-ink hover:bg-yellow-100 dark:hover:bg-gray-700'
           }`}
         >
           <BookOpen className="w-4 h-4" />
@@ -154,13 +154,13 @@ export const HeaderStatsBar: React.FC<HeaderStatsBarProps> = ({
           className={`px-4 py-2 text-sm font-extrabold neo-btn flex items-center gap-1.5 ${
             activeTab === 'drafts'
               ? 'bg-[#111111] text-white dark:bg-[#00F0FF] dark:text-black'
-              : 'bg-white text-black hover:bg-yellow-100 dark:bg-[#27272A] dark:text-white dark:hover:bg-gray-700'
+              : 'bg-surface text-ink hover:bg-yellow-100 dark:hover:bg-gray-700'
           }`}
         >
           <Edit3 className="w-4 h-4 text-[#FF5A36]" />
           <span>Meus Rascunhos</span>
           {draftsCount > 0 && (
-            <span className="bg-[#FFE600] text-black px-1.5 py-0.2 rounded-full text-[10px] font-mono font-bold">
+            <span className="bg-primary text-ink px-1.5 py-0.2 rounded-full text-[10px] font-mono font-bold">
               {draftsCount}
             </span>
           )}
@@ -172,7 +172,7 @@ export const HeaderStatsBar: React.FC<HeaderStatsBarProps> = ({
           className={`px-4 py-2 text-sm font-extrabold neo-btn flex items-center gap-1.5 ${
             activeTab === 'srs'
               ? 'bg-[#111111] text-white dark:bg-[#00F0FF] dark:text-black'
-              : 'bg-white text-black hover:bg-yellow-100 dark:bg-[#27272A] dark:text-white dark:hover:bg-gray-700'
+              : 'bg-surface text-ink hover:bg-yellow-100 dark:hover:bg-gray-700'
           }`}
         >
           <RotateCcw className="w-4 h-4 text-[#00F0FF]" />
@@ -190,7 +190,7 @@ export const HeaderStatsBar: React.FC<HeaderStatsBarProps> = ({
           className={`px-4 py-2 text-sm font-extrabold neo-btn flex items-center gap-1.5 ${
             activeTab === 'dashboard'
               ? 'bg-[#111111] text-white dark:bg-[#00F0FF] dark:text-black'
-              : 'bg-white text-black hover:bg-yellow-100 dark:bg-[#27272A] dark:text-white dark:hover:bg-gray-700'
+              : 'bg-surface text-ink hover:bg-yellow-100 dark:hover:bg-gray-700'
           }`}
         >
           <BarChart3 className="w-4 h-4 text-[#00E599]" />
@@ -200,3 +200,5 @@ export const HeaderStatsBar: React.FC<HeaderStatsBarProps> = ({
     </header>
   );
 };
+
+export const HeaderStatsBar = React.memo(HeaderStatsBarComponent);
