@@ -16,6 +16,7 @@ const STORAGE_KEYS = {
   SRS: 'vestibulando_neo_srs_v1',
   ANNOTATIONS_PREFIX: 'vestibulando_neo_strokes_',
   INGESTION_LOGS: 'vestibulando_neo_logs_v1',
+  EXPLANATION_OVERRIDES: 'vestibulando_neo_explanations_v1',
 };
 
 const DEFAULT_PROFILE: UserProfile = {
@@ -48,6 +49,47 @@ export function deduplicateQuestions(questions: Question[]): Question[] {
 }
 
 /**
+ * Resoluções escritas/editadas pelo aluno (id da questão -> texto). Ficam separadas da lista de
+ * questões para que uma nova sincronização com as APIs não sobrescreva o que o aluno escreveu.
+ */
+function getExplanationOverrides(): Record<string, string> {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEYS.EXPLANATION_OVERRIDES);
+    const parsed = raw ? JSON.parse(raw) : {};
+    return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : {};
+  } catch (e) {
+    return {};
+  }
+}
+
+export function applyExplanationOverrides(questions: Question[]): Question[] {
+  const overrides = getExplanationOverrides();
+  if (Object.keys(overrides).length === 0) return questions;
+  return questions.map((q) =>
+    Object.prototype.hasOwnProperty.call(overrides, q.id) ? { ...q, explanation: overrides[q.id] } : q
+  );
+}
+
+/**
+ * Adiciona ou edita a resolução de uma questão de forma permanente.
+ * Retorna a lista de questões atualizada, ou null se não foi possível gravar.
+ */
+export function updateQuestionExplanation(questionId: string, explanation: string): Question[] | null {
+  try {
+    const overrides = getExplanationOverrides();
+    overrides[questionId] = explanation.trim();
+    localStorage.setItem(STORAGE_KEYS.EXPLANATION_OVERRIDES, JSON.stringify(overrides));
+
+    const updated = getStoredQuestions();
+    localStorage.setItem(STORAGE_KEYS.QUESTIONS, JSON.stringify(updated));
+    return updated;
+  } catch (e) {
+    console.error('Falha ao salvar a resolução da questão:', e);
+    return null;
+  }
+}
+
+/**
  * Inicializa e recupera a lista de questões armazenadas localmente, aplicando deduplicação rigorosa
  */
 export function getStoredQuestions(): Question[] {
@@ -56,7 +98,7 @@ export function getStoredQuestions(): Question[] {
     if (!raw) {
       const cleanSeed = deduplicateQuestions(INITIAL_QUESTION_SEED);
       localStorage.setItem(STORAGE_KEYS.QUESTIONS, JSON.stringify(cleanSeed));
-      return cleanSeed;
+      return applyExplanationOverrides(cleanSeed);
     }
     const parsed = JSON.parse(raw);
     const questionsList = Array.isArray(parsed) ? parsed : INITIAL_QUESTION_SEED;
@@ -64,10 +106,10 @@ export function getStoredQuestions(): Question[] {
     if (deduplicated.length !== questionsList.length) {
       localStorage.setItem(STORAGE_KEYS.QUESTIONS, JSON.stringify(deduplicated));
     }
-    return deduplicated;
+    return applyExplanationOverrides(deduplicated);
   } catch (e) {
     console.error('Falha ao ler questões do storage local:', e);
-    return deduplicateQuestions(INITIAL_QUESTION_SEED);
+    return applyExplanationOverrides(deduplicateQuestions(INITIAL_QUESTION_SEED));
   }
 }
 
@@ -80,7 +122,7 @@ export function saveQuestions(newQuestions: Question[]): Question[] {
     const combined = [...newQuestions, ...current];
     const deduplicated = deduplicateQuestions(combined);
     localStorage.setItem(STORAGE_KEYS.QUESTIONS, JSON.stringify(deduplicated));
-    return deduplicated;
+    return applyExplanationOverrides(deduplicated);
   } catch (e) {
     console.error('Falha ao salvar questões no banco local:', e);
     return getStoredQuestions();
@@ -262,6 +304,31 @@ export function getQuestionStrokes(questionId: string): DrawingStroke[] {
   } catch (e) {
     return [];
   }
+}
+
+/**
+ * Retorna um mapa com todos os rascunhos/anotações salvos no navegador
+ */
+export function getAllSavedStrokes(): Record<string, DrawingStroke[]> {
+  const result: Record<string, DrawingStroke[]> = {};
+  try {
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && key.startsWith(STORAGE_KEYS.ANNOTATIONS_PREFIX)) {
+        const questionId = key.replace(STORAGE_KEYS.ANNOTATIONS_PREFIX, '');
+        const raw = localStorage.getItem(key);
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            result[questionId] = parsed;
+          }
+        }
+      }
+    }
+  } catch (e) {
+    console.error('Falha ao listar rascunhos:', e);
+  }
+  return result;
 }
 
 /**

@@ -1,9 +1,24 @@
 @import "tailwindcss";
 
+/* Tailwind v4: faz o variant dark: seguir a classe .dark (alternância manual) e não o tema do sistema operacional */
+@custom-variant dark (&:where(.dark, .dark *));
+
 @layer base {
   :root {
     --font-heading: 'Space Grotesk', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     --font-mono: 'JetBrains Mono', monospace;
+
+    /* Paleta do modo escuro (roxo como cor principal) */
+    --dark-bg: #0F0B17;
+    --dark-surface: #1A1523;
+    --dark-surface-2: #231C2F;
+    --dark-border: #4C3F66;
+    --dark-shadow: #2E2540;
+    --dark-primary: #7C3AED;      /* substitui o amarelo */
+    --dark-primary-hover: #8B5CF6;
+    --dark-secondary: #5B21B6;    /* substitui o ciano */
+    --dark-text: #F5F2EA;
+    --dark-text-muted: #B8B0C9;
   }
 
   body {
@@ -13,7 +28,362 @@
     overflow-x: hidden;
     user-select: none;
     -webkit-font-smoothing: antialiased;
+    transition: background-color 0.2s ease, color 0.2s ease;
   }
+
+  html.dark body, body.dark {
+    background-color: var(--dark-bg);
+    color: var(--dark-text);
+  }
+}
+
+/* Dark mode overrides for cards and panels */
+html.dark .bg-white, .dark .bg-white {
+  background-color: var(--dark-surface) !important;
+  color: var(--dark-text) !important;
+}
+
+html.dark .text-black, .dark .text-black,
+html.dark .text-gray-900, .dark .text-gray-900,
+html.dark .text-gray-800, .dark .text-gray-800 {
+  color: #F5F2EA !important;
+}
+
+html.dark .text-gray-700, .dark .text-gray-700,
+html.dark .text-gray-600, .dark .text-gray-600 {
+  color: var(--dark-text-muted) !important;
+}
+
+html.dark .bg-\[\#F8F5EE\], .dark .bg-\[\#F8F5EE\],
+html.dark .bg-\[\#F5F2EA\], .dark .bg-\[\#F5F2EA\],
+html.dark .bg-\[\#FAF8F5\], .dark .bg-\[\#FAF8F5\],
+html.dark .bg-\[\#FBF8F1\], .dark .bg-\[\#FBF8F1\] {
+  background-color: var(--dark-surface-2) !important;
+  color: var(--dark-text) !important;
+}
+
+html.dark .neo-border, .dark .neo-border {
+  border-color: var(--dark-border) !important;
+}
+
+html.dark .neo-border-sm, .dark .neo-border-sm {
+  border-color: var(--dark-border) !important;
+}
+
+html.dark .neo-border-thick, .dark .neo-border-thick {
+  border-color: #6D5A94 !important;
+}
+
+html.dark .neo-shadow, .dark .neo-shadow {
+  box-shadow: 4px 4px 0px var(--dark-shadow) !important;
+}
+
+html.dark .neo-shadow-sm, .dark .neo-shadow-sm {
+  box-shadow: 2px 2px 0px var(--dark-shadow) !important;
+}
+
+html.dark .neo-shadow-lg, .dark .neo-shadow-lg {
+  box-shadow: 6px 6px 0px var(--dark-shadow) !important;
+}
+
+html.dark .neo-shadow-xl, .dark .neo-shadow-xl {
+  box-shadow: 8px 8px 0px var(--dark-shadow) !important;
+}
+
+html.dark input, .dark input,
+html.dark select, .dark select,
+html.dark textarea, .dark textarea {
+  background-color: var(--dark-surface-2) !important;
+  color: #FFFFFF !important;
+  border-color: var(--dark-border) !important;
+}
+
+/* ============================================================
+   MODO ESCURO: fundos claros viram escuros; amarelo/ciano viram roxo.
+   ============================================================ */
+
+/* Tailwind v4 gera bg-gray-50, bg-orange-100 etc. a partir de variáveis --color-*.
+   Redefinir as variáveis no modo escuro corrige todos os fundos claros (e hovers)
+   sem precisar saber em quais componentes eles aparecem. */
+html.dark {
+  --color-red-50: #301212;
+  --color-red-100: #3F1818;
+  --color-red-200: #511F1F;
+  --color-red-600: #F36868;
+  --color-red-700: #F68E8E;
+  --color-red-800: #F9B4B4;
+  --color-red-900: #FCD5D5;
+  --color-orange-50: #301F12;
+  --color-orange-100: #3F2818;
+  --color-orange-200: #51341F;
+  --color-orange-600: #F3A268;
+  --color-orange-700: #F6B98E;
+  --color-orange-800: #F9D0B4;
+  --color-orange-900: #FCE5D5;
+  --color-lime-50: #243012;
+  --color-lime-100: #2F3F18;
+  --color-lime-200: #3C511F;
+  --color-lime-600: #B9F368;
+  --color-lime-700: #CAF68E;
+  --color-lime-800: #DCF9B4;
+  --color-lime-900: #EBFCD5;
+  --color-green-50: #12301C;
+  --color-green-100: #183F25;
+  --color-green-200: #1F5130;
+  --color-green-600: #68F396;
+  --color-green-700: #8EF6B0;
+  --color-green-800: #B4F9CB;
+  --color-green-900: #D5FCE2;
+  --color-emerald-50: #123026;
+  --color-emerald-100: #183F32;
+  --color-emerald-200: #1F5141;
+  --color-emerald-600: #68F3C5;
+  --color-emerald-700: #8EF6D3;
+  --color-emerald-800: #B4F9E2;
+  --color-emerald-900: #D5FCEF;
+  --color-teal-50: #12302E;
+  --color-teal-100: #183F3C;
+  --color-teal-200: #1F514D;
+  --color-teal-600: #68F3E7;
+  --color-teal-700: #8EF6ED;
+  --color-teal-800: #B4F9F3;
+  --color-teal-900: #D5FCF8;
+  --color-blue-50: #121C30;
+  --color-blue-100: #18253F;
+  --color-blue-200: #1F3051;
+  --color-blue-600: #6896F3;
+  --color-blue-700: #8EB0F6;
+  --color-blue-800: #B4CBF9;
+  --color-blue-900: #D5E2FC;
+  --color-indigo-50: #121230;
+  --color-indigo-100: #18183F;
+  --color-indigo-200: #1F1F51;
+  --color-indigo-600: #6868F3;
+  --color-indigo-700: #8E8EF6;
+  --color-indigo-800: #B4B4F9;
+  --color-indigo-900: #D5D5FC;
+  --color-violet-50: #1B1230;
+  --color-violet-100: #24183F;
+  --color-violet-200: #2E1F51;
+  --color-violet-600: #9268F3;
+  --color-violet-700: #AD8EF6;
+  --color-violet-800: #C8B4F9;
+  --color-violet-900: #E0D5FC;
+  --color-purple-50: #211230;
+  --color-purple-100: #2B183F;
+  --color-purple-200: #381F51;
+  --color-purple-600: #AD68F3;
+  --color-purple-700: #C28EF6;
+  --color-purple-800: #D6B4F9;
+  --color-purple-900: #E8D5FC;
+  --color-fuchsia-50: #2E1230;
+  --color-fuchsia-100: #3C183F;
+  --color-fuchsia-200: #4D1F51;
+  --color-fuchsia-600: #E768F3;
+  --color-fuchsia-700: #ED8EF6;
+  --color-fuchsia-800: #F3B4F9;
+  --color-fuchsia-900: #F8D5FC;
+  --color-pink-50: #301221;
+  --color-pink-100: #3F182B;
+  --color-pink-200: #511F38;
+  --color-pink-600: #F368AD;
+  --color-pink-700: #F68EC2;
+  --color-pink-800: #F9B4D6;
+  --color-pink-900: #FCD5E8;
+  --color-rose-50: #30121A;
+  --color-rose-100: #3F1822;
+  --color-rose-200: #511F2B;
+  --color-rose-600: #F3688B;
+  --color-rose-700: #F68EA8;
+  --color-rose-800: #F9B4C5;
+  --color-rose-900: #FCD5DE;
+  --color-yellow-50: #1D1230;
+  --color-yellow-100: #26183F;
+  --color-yellow-200: #311F51;
+  --color-yellow-600: #9B68F3;
+  --color-yellow-700: #B48EF6;
+  --color-yellow-800: #CDB4F9;
+  --color-yellow-900: #E3D5FC;
+  --color-amber-50: #1D1230;
+  --color-amber-100: #26183F;
+  --color-amber-200: #311F51;
+  --color-amber-600: #9B68F3;
+  --color-amber-700: #B48EF6;
+  --color-amber-800: #CDB4F9;
+  --color-amber-900: #E3D5FC;
+  --color-cyan-50: #1D1230;
+  --color-cyan-100: #26183F;
+  --color-cyan-200: #311F51;
+  --color-cyan-600: #9B68F3;
+  --color-cyan-700: #B48EF6;
+  --color-cyan-800: #CDB4F9;
+  --color-cyan-900: #E3D5FC;
+  --color-sky-50: #1D1230;
+  --color-sky-100: #26183F;
+  --color-sky-200: #311F51;
+  --color-sky-600: #9B68F3;
+  --color-sky-700: #B48EF6;
+  --color-sky-800: #CDB4F9;
+  --color-sky-900: #E3D5FC;
+  --color-gray-50: #1F1929;
+  --color-gray-100: #231C2F;
+  --color-gray-200: #2E2540;
+  --color-gray-300: #3A2F4F;
+  --color-slate-50: #1F1929;
+  --color-slate-100: #231C2F;
+  --color-slate-200: #2E2540;
+  --color-slate-300: #3A2F4F;
+  --color-zinc-50: #1F1929;
+  --color-zinc-100: #231C2F;
+  --color-zinc-200: #2E2540;
+  --color-zinc-300: #3A2F4F;
+  --color-neutral-50: #1F1929;
+  --color-neutral-100: #231C2F;
+  --color-neutral-200: #2E2540;
+  --color-neutral-300: #3A2F4F;
+  --color-stone-50: #1F1929;
+  --color-stone-100: #231C2F;
+  --color-stone-200: #2E2540;
+  --color-stone-300: #3A2F4F;
+}
+
+/* Fundos claros "soltos": branco com opacidade e hex arbitrário (#FFF..., #F5F..., #EEE...) */
+html.dark :is(
+  [class^="bg-white/" i], [class*=" bg-white/" i],
+  [class^="bg-[#F0F" i], [class*=" bg-[#F0F" i],
+  [class^="bg-[#F1F" i], [class*=" bg-[#F1F" i],
+  [class^="bg-[#F2F" i], [class*=" bg-[#F2F" i],
+  [class^="bg-[#F3F" i], [class*=" bg-[#F3F" i],
+  [class^="bg-[#F4F" i], [class*=" bg-[#F4F" i],
+  [class^="bg-[#F5F" i], [class*=" bg-[#F5F" i],
+  [class^="bg-[#F6F" i], [class*=" bg-[#F6F" i],
+  [class^="bg-[#F7F" i], [class*=" bg-[#F7F" i],
+  [class^="bg-[#F8F" i], [class*=" bg-[#F8F" i],
+  [class^="bg-[#F9F" i], [class*=" bg-[#F9F" i],
+  [class^="bg-[#FAF" i], [class*=" bg-[#FAF" i],
+  [class^="bg-[#FBF" i], [class*=" bg-[#FBF" i],
+  [class^="bg-[#FCF" i], [class*=" bg-[#FCF" i],
+  [class^="bg-[#FDF" i], [class*=" bg-[#FDF" i],
+  [class^="bg-[#FEF" i], [class*=" bg-[#FEF" i],
+  [class^="bg-[#FFF" i], [class*=" bg-[#FFF" i],
+  [class^="bg-[#E0E" i], [class*=" bg-[#E0E" i],
+  [class^="bg-[#E1E" i], [class*=" bg-[#E1E" i],
+  [class^="bg-[#E2E" i], [class*=" bg-[#E2E" i],
+  [class^="bg-[#E3E" i], [class*=" bg-[#E3E" i],
+  [class^="bg-[#E4E" i], [class*=" bg-[#E4E" i],
+  [class^="bg-[#E5E" i], [class*=" bg-[#E5E" i],
+  [class^="bg-[#E6E" i], [class*=" bg-[#E6E" i],
+  [class^="bg-[#E7E" i], [class*=" bg-[#E7E" i],
+  [class^="bg-[#E8E" i], [class*=" bg-[#E8E" i],
+  [class^="bg-[#E9E" i], [class*=" bg-[#E9E" i],
+  [class^="bg-[#EAE" i], [class*=" bg-[#EAE" i],
+  [class^="bg-[#EBE" i], [class*=" bg-[#EBE" i],
+  [class^="bg-[#ECE" i], [class*=" bg-[#ECE" i],
+  [class^="bg-[#EDE" i], [class*=" bg-[#EDE" i],
+  [class^="bg-[#EEE" i], [class*=" bg-[#EEE" i],
+  [class^="bg-[#EFE" i], [class*=" bg-[#EFE" i]
+) {
+  background-color: var(--dark-surface-2) !important;
+  color: var(--dark-text) !important;
+}
+
+html.dark [class*="hover:bg-white"]:hover {
+  background-color: var(--dark-surface-2) !important;
+}
+
+/* Amarelo / âmbar saturados -> roxo principal (vem DEPOIS da regra acima para vencer) */
+html.dark :is(
+  [class^="bg-yellow-3"], [class*=" bg-yellow-3"],
+  [class^="bg-yellow-4"], [class*=" bg-yellow-4"],
+  [class^="bg-yellow-5"], [class*=" bg-yellow-5"],
+  [class^="bg-yellow-6"], [class*=" bg-yellow-6"],
+  [class^="bg-yellow-7"], [class*=" bg-yellow-7"],
+  [class^="bg-amber-3"], [class*=" bg-amber-3"],
+  [class^="bg-amber-4"], [class*=" bg-amber-4"],
+  [class^="bg-amber-5"], [class*=" bg-amber-5"],
+  [class^="bg-amber-6"], [class*=" bg-amber-6"],
+  [class^="bg-amber-7"], [class*=" bg-amber-7"],
+  [class^="bg-[#FFE" i], [class*=" bg-[#FFE" i],
+  [class^="bg-[#FFD" i], [class*=" bg-[#FFD" i],
+  [class^="bg-[#FAC" i], [class*=" bg-[#FAC" i]
+) {
+  background-color: var(--dark-primary) !important;
+  color: #FFFFFF !important;
+}
+
+/* Ciano / azul-claro saturados -> roxo secundário */
+html.dark :is(
+  [class^="bg-cyan-3"], [class*=" bg-cyan-3"],
+  [class^="bg-cyan-4"], [class*=" bg-cyan-4"],
+  [class^="bg-cyan-5"], [class*=" bg-cyan-5"],
+  [class^="bg-cyan-6"], [class*=" bg-cyan-6"],
+  [class^="bg-cyan-7"], [class*=" bg-cyan-7"],
+  [class^="bg-sky-3"], [class*=" bg-sky-3"],
+  [class^="bg-sky-4"], [class*=" bg-sky-4"],
+  [class^="bg-sky-5"], [class*=" bg-sky-5"],
+  [class^="bg-sky-6"], [class*=" bg-sky-6"],
+  [class^="bg-sky-7"], [class*=" bg-sky-7"],
+  [class^="bg-[#00E" i], [class*=" bg-[#00E" i],
+  [class^="bg-[#00F" i], [class*=" bg-[#00F" i],
+  [class^="bg-[#22D" i], [class*=" bg-[#22D" i]
+) {
+  background-color: var(--dark-secondary) !important;
+  color: #FFFFFF !important;
+}
+
+/* Todo texto dentro das caixas roxas fica claro (vence .text-black, .text-gray-* etc.) */
+html.dark :is(
+  [class^="bg-yellow-3"], [class*=" bg-yellow-3"],
+  [class^="bg-yellow-4"], [class*=" bg-yellow-4"],
+  [class^="bg-yellow-5"], [class*=" bg-yellow-5"],
+  [class^="bg-yellow-6"], [class*=" bg-yellow-6"],
+  [class^="bg-yellow-7"], [class*=" bg-yellow-7"],
+  [class^="bg-amber-3"], [class*=" bg-amber-3"],
+  [class^="bg-amber-4"], [class*=" bg-amber-4"],
+  [class^="bg-amber-5"], [class*=" bg-amber-5"],
+  [class^="bg-amber-6"], [class*=" bg-amber-6"],
+  [class^="bg-amber-7"], [class*=" bg-amber-7"],
+  [class^="bg-[#FFE" i], [class*=" bg-[#FFE" i],
+  [class^="bg-[#FFD" i], [class*=" bg-[#FFD" i],
+  [class^="bg-[#FAC" i], [class*=" bg-[#FAC" i],
+  [class^="bg-cyan-3"], [class*=" bg-cyan-3"],
+  [class^="bg-cyan-4"], [class*=" bg-cyan-4"],
+  [class^="bg-cyan-5"], [class*=" bg-cyan-5"],
+  [class^="bg-cyan-6"], [class*=" bg-cyan-6"],
+  [class^="bg-cyan-7"], [class*=" bg-cyan-7"],
+  [class^="bg-sky-3"], [class*=" bg-sky-3"],
+  [class^="bg-sky-4"], [class*=" bg-sky-4"],
+  [class^="bg-sky-5"], [class*=" bg-sky-5"],
+  [class^="bg-sky-6"], [class*=" bg-sky-6"],
+  [class^="bg-sky-7"], [class*=" bg-sky-7"],
+  [class^="bg-[#00E" i], [class*=" bg-[#00E" i],
+  [class^="bg-[#00F" i], [class*=" bg-[#00F" i],
+  [class^="bg-[#22D" i], [class*=" bg-[#22D" i]
+) :is(*, .text-black, .text-gray-900, .text-gray-800, .text-gray-700, .text-gray-600) {
+  color: #FFFFFF !important;
+}
+
+/* Botões neobrutalistas amarelos: hover roxo mais claro no escuro */
+html.dark .neo-btn:hover:is(
+  [class^="bg-yellow-3" i], [class*=" bg-yellow-3" i],
+  [class^="bg-yellow-4" i], [class*=" bg-yellow-4" i],
+  [class^="bg-[#FFE" i], [class*=" bg-[#FFE" i],
+  [class^="bg-[#FFD" i], [class*=" bg-[#FFD" i]
+) {
+  background-color: var(--dark-primary-hover) !important;
+}
+
+/* Realce de texto selecionado em roxo */
+html.dark ::selection {
+  background: var(--dark-primary);
+  color: #FFFFFF;
+}
+
+/* Texto que o aluno pode selecionar e copiar (o restante do app mantém user-select: none) */
+.selectable-text {
+  user-select: text;
+  -webkit-user-select: text;
+  cursor: text;
 }
 
 /* Neobrutalism utility classes */
@@ -69,14 +439,31 @@
     linear-gradient(to bottom, rgba(0, 0, 0, 0.08) 1px, transparent 1px);
 }
 
+.bg-grid-pattern-dark {
+  background-size: 24px 24px;
+  background-image: 
+    linear-gradient(to right, rgba(255, 255, 255, 0.07) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.07) 1px, transparent 1px);
+}
+
 .bg-lined-pattern {
   background-size: 100% 28px;
   background-image: linear-gradient(to bottom, rgba(0, 0, 0, 0.12) 1px, transparent 1px);
 }
 
+.bg-lined-pattern-dark {
+  background-size: 100% 28px;
+  background-image: linear-gradient(to bottom, rgba(255, 255, 255, 0.09) 1px, transparent 1px);
+}
+
 .bg-dots-pattern {
   background-size: 20px 20px;
   background-image: radial-gradient(circle, rgba(0,0,0,0.18) 1.5px, transparent 1.5px);
+}
+
+.bg-dots-pattern-dark {
+  background-size: 20px 20px;
+  background-image: radial-gradient(circle, rgba(255,255,255,0.18) 1.5px, transparent 1.5px);
 }
 
 /* Stylus pointer styling */
@@ -103,4 +490,19 @@
 
 ::-webkit-scrollbar-thumb:hover {
   background: #FF5C00;
+}
+
+/* Scrollbar no modo escuro */
+html.dark ::-webkit-scrollbar-track {
+  background: var(--dark-surface);
+  border-left: 2px solid var(--dark-border);
+}
+
+html.dark ::-webkit-scrollbar-thumb {
+  background: var(--dark-primary);
+  border: 2px solid var(--dark-border);
+}
+
+html.dark ::-webkit-scrollbar-thumb:hover {
+  background: var(--dark-primary-hover);
 }

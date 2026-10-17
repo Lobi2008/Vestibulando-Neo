@@ -106,6 +106,7 @@ export interface UserProfile {
   lastActiveDate: string;
   totalXp: number;
   level: number;
+  estimatedTri?: number;
 }
 
 export type PenTool = 'pen' | 'highlighter' | 'eraser' | 'line';

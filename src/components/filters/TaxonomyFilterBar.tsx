@@ -7,8 +7,8 @@
  * Além de busca textual e filtro de status de resolução (não resolvidas, certas, erros).
  */
 
-import React, { useMemo } from 'react';
-import { Filter, Search, RotateCcw, CheckCircle2, XCircle, HelpCircle, Layers } from 'lucide-react';
+import React, { useMemo, useState } from 'react';
+import { Filter, Search, RotateCcw, CheckCircle2, XCircle, HelpCircle, Layers, ChevronUp, ChevronDown } from 'lucide-react';
 import type { FilterState, ExamType, AreaOfKnowledge, Question } from '../../types/index.ts';
 
 interface TaxonomyFilterBarProps {
@@ -61,28 +61,45 @@ export const TaxonomyFilterBar: React.FC<TaxonomyFilterBarProps> = ({
     return Array.from(set).sort();
   }, [questions, filters.vestibular, filters.area]);
 
+  const [isCollapsed, setIsCollapsed] = useState<boolean>(true);
+
   return (
-    <div className="bg-white neo-border neo-shadow p-3 mb-4">
-      <div className="flex flex-wrap items-center justify-between gap-2 pb-2 mb-2 border-b-2 border-black">
+    <div className="bg-white neo-border neo-shadow p-3 mb-4 transition-all">
+      <div className={`flex flex-wrap items-center justify-between gap-2 ${isCollapsed ? '' : 'pb-2 mb-2 border-b-2 border-black'}`}>
         <div className="flex items-center gap-2">
           <Layers className="w-5 h-5 text-black" />
           <span className="text-sm font-black uppercase tracking-wider text-black">
-            Taxonomia Hierárquica de 3 Níveis
+            FILTRO
           </span>
           <span className="text-xs bg-[#111111] text-white px-2 py-0.5 font-bold">
             {filteredCount} questões encontradas
           </span>
         </div>
 
-        <button
-          type="button"
-          onClick={onResetFilters}
-          className="text-xs font-bold text-gray-700 hover:text-black flex items-center gap-1 hover:underline"
-        >
-          <RotateCcw className="w-3.5 h-3.5" />
-          Limpar Filtros
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={onResetFilters}
+            className="text-xs font-bold text-gray-700 hover:text-black flex items-center gap-1 hover:underline mr-1"
+          >
+            <RotateCcw className="w-3.5 h-3.5" />
+            <span>Limpar Filtros</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setIsCollapsed(!isCollapsed)}
+            className="p-1 neo-border-sm bg-[#F5F2EA] hover:bg-black hover:text-white transition-colors"
+            title={isCollapsed ? 'Expandir Filtros' : 'Ocultar Filtros'}
+            aria-label={isCollapsed ? 'Expandir Filtros' : 'Ocultar Filtros'}
+          >
+            {isCollapsed ? <ChevronDown className="w-4 h-4" /> : <ChevronUp className="w-4 h-4" />}
+          </button>
+        </div>
       </div>
+
+      {!isCollapsed && (
+        <div className="space-y-3">
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
         {/* NÍVEL 1: VESTIBULAR */}
@@ -221,6 +238,8 @@ export const TaxonomyFilterBar: React.FC<TaxonomyFilterBarProps> = ({
           />
         </div>
       </div>
+      </div>
+      )}
     </div>
   );
 };

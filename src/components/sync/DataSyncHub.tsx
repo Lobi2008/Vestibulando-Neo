@@ -5,7 +5,7 @@
  * exibe logs de conectividade e exporta os dados para arquivo SQLite offline no Windows 11.
  */
 
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { 
   Database, 
   RefreshCw, 
@@ -31,6 +31,13 @@ import {
 } from '../../services/storage/localDatabase.ts';
 import type { QuestionDeletionCriteria } from '../../services/storage/localDatabase.ts';
 import { INITIAL_QUESTION_SEED } from '../../services/ingestion/questionSeed.ts';
+import {
+  IMPORT_FIELD_GUIDE,
+  buildCsvTemplate,
+  buildJsonTemplate,
+  parseQuestionFile,
+} from '../../utils/questionImport.ts';
+import type { ImportError } from '../../utils/questionImport.ts';
 
 interface DataSyncHubProps {
   questions: Question[];
@@ -54,6 +61,17 @@ export const DataSyncHub: React.FC<DataSyncHubProps> = ({
   ]);
 
   const [progressMsg, setProgressMsg] = useState<string>('');
+
+  // Envio de banco de questões do próprio aluno (.json / .csv)
+  const importInputRef = useRef<HTMLInputElement | null>(null);
+  const [importReport, setImportReport] = useState<{
+    fileName: string;
+    totalRows: number;
+    valid: number;
+    added: number;
+    errors: ImportError[];
+    fatalError?: string;
+  } | null>(null);
 
   // Apagar questões: filtros (vestibular > matéria > conteúdo específico) e confirmação
   const [deleteVestibular, setDeleteVestibular] = useState<ExamType | 'TODOS'>('TODOS');
@@ -254,6 +272,67 @@ export const DataSyncHub: React.FC<DataSyncHubProps> = ({
     URL.revokeObjectURL(url);
   };
 
+  const downloadTextFile = (content: string, fileName: string, mime: string) => {
+    const blob = new Blob([content], { type: `${mime};charset=utf-8` });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = fileName;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const handleDownloadJsonTemplate = () =>
+    downloadTextFile(buildJsonTemplate(), 'modelo_banco_questoes.json', 'application/json');
+
+  const handleDownloadCsvTemplate = () =>
+    downloadTextFile(buildCsvTemplate(), 'modelo_banco_questoes.csv', 'text/csv');
+
+  const handleImportFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+
+    try {
+      const content = await file.text();
+      const result = parseQuestionFile(file.name, content);
+
+      let added = 0;
+      if (result.questions.length > 0) {
+        const updated = saveQuestions(result.questions);
+        added = Math.max(0, updated.length - questions.length);
+        onQuestionsUpdated(updated);
+      }
+
+      setImportReport({
+        fileName: file.name,
+        totalRows: result.totalRows,
+        valid: result.questions.length,
+        added,
+        errors: result.errors,
+      });
+      setLogs((prev) => [
+        {
+          timestamp: Date.now(),
+          source: 'Banco do Aluno (upload)',
+          status: result.errors.length === 0 ? 'success' : result.questions.length > 0 ? 'warning' : 'error',
+          message: `${file.name}: ${added} questão(ões) adicionada(s), ${result.questions.length - added} já existiam/atualizadas, ${result.errors.length} linha(s) com erro.`,
+          count: added,
+        },
+        ...prev,
+      ]);
+    } catch (err: any) {
+      setImportReport({
+        fileName: file.name,
+        totalRows: 0,
+        valid: 0,
+        added: 0,
+        errors: [],
+        fatalError: err?.message || 'Não foi possível ler o arquivo.',
+      });
+    }
+  };
+
   const handleResetSeed = () => {
     if (confirm('Deseja limpar e restaurar o banco de dados removendo todas as duplicatas?')) {
       const fresh = clearAndResetDatabase();
@@ -409,6 +488,121 @@ export const DataSyncHub: React.FC<DataSyncHubProps> = ({
             Restaurar Banco de Questões Padrão
           </button>
         </div>
+      </div>
+
+      {/* Enviar o próprio banco de questões (upload .json / .csv) */}
+      <div className="bg-white neo-border neo-shadow p-5 space-y-4">
+        <h3 className="text-sm font-black uppercase tracking-wider text-black pb-2 border-b-2 border-black flex items-center gap-2">
+          <Upload className="w-4 h-4 text-[#00AA44]" />
+          <span>Enviar meu Banco de Questões</span>
+        </h3>
+
+        <p className="text-xs font-bold text-gray-700 leading-relaxed">
+          Tem um banco de questões próprio? Baixe o arquivo modelo, preencha com as suas questões e envie de volta.
+          Aceitamos <strong>.json</strong> e <strong>.csv</strong> (planilha do Excel salva como CSV). As questões enviadas
+          entram no banco junto com as demais, e questões repetidas não são duplicadas.
+        </p>
+
+        <div className="flex flex-wrap items-center gap-3">
+          <button
+            type="button"
+            onClick={handleDownloadCsvTemplate}
+            className="px-4 py-2 text-xs font-black neo-btn bg-white dark:bg-[#27272A] text-black dark:text-white flex items-center gap-2"
+          >
+            <Download className="w-4 h-4" />
+            <span>Baixar modelo (.csv / Excel)</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={handleDownloadJsonTemplate}
+            className="px-4 py-2 text-xs font-black neo-btn bg-white dark:bg-[#27272A] text-black dark:text-white flex items-center gap-2"
+          >
+            <Download className="w-4 h-4" />
+            <span>Baixar modelo (.json)</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => importInputRef.current?.click()}
+            className="px-4 py-2 text-xs font-black neo-btn bg-[#00E599] text-black flex items-center gap-2"
+          >
+            <Upload className="w-4 h-4" />
+            <span>Enviar arquivo de questões</span>
+          </button>
+
+          <input
+            ref={importInputRef}
+            type="file"
+            accept=".json,.csv,application/json,text/csv"
+            onChange={handleImportFile}
+            className="hidden"
+          />
+        </div>
+
+        {importReport && (
+          <div
+            className={`p-3 neo-border-sm text-xs space-y-2 ${
+              importReport.fatalError
+                ? 'bg-red-100 dark:bg-red-950 text-red-900 dark:text-red-200'
+                : 'bg-green-100 dark:bg-green-950 text-green-900 dark:text-green-200'
+            }`}
+          >
+            <div className="font-black flex items-center gap-1.5">
+              {importReport.fatalError ? <AlertCircle className="w-4 h-4" /> : <CheckCircle className="w-4 h-4" />}
+              <span>{importReport.fileName}</span>
+            </div>
+
+            {importReport.fatalError ? (
+              <p className="font-bold">{importReport.fatalError}</p>
+            ) : (
+              <p className="font-bold">
+                {importReport.totalRows} linha(s) lida(s): {importReport.valid} válida(s) —{' '}
+                {importReport.added} nova(s) no banco, {importReport.valid - importReport.added} já existia(m) —{' '}
+                {importReport.errors.length} com erro.
+              </p>
+            )}
+
+            {importReport.errors.length > 0 && (
+              <ul className="font-mono text-[11px] space-y-0.5 max-h-40 overflow-y-auto bg-white dark:bg-[#18181B] text-gray-900 dark:text-gray-100 p-2 neo-border-sm">
+                {importReport.errors.slice(0, 50).map((err, idx) => (
+                  <li key={idx}>
+                    Linha {err.row}: {err.message}
+                  </li>
+                ))}
+                {importReport.errors.length > 50 && <li>… e mais {importReport.errors.length - 50} erro(s).</li>}
+              </ul>
+            )}
+          </div>
+        )}
+
+        <details className="text-xs">
+          <summary className="cursor-pointer font-black text-black">Ver campos e formato do arquivo</summary>
+          <div className="mt-3 overflow-x-auto">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="border-b-2 border-black dark:border-gray-600 text-black">
+                  <th className="py-1 pr-3 font-black">Campo</th>
+                  <th className="py-1 pr-3 font-black">Obrigatório</th>
+                  <th className="py-1 font-black">O que colocar</th>
+                </tr>
+              </thead>
+              <tbody>
+                {IMPORT_FIELD_GUIDE.map((item) => (
+                  <tr key={item.field} className="border-b border-gray-300 dark:border-gray-700 align-top">
+                    <td className="py-1.5 pr-3 font-mono font-bold text-black whitespace-nowrap">{item.field}</td>
+                    <td className="py-1.5 pr-3 font-bold text-gray-700 whitespace-nowrap">{item.required ? 'Sim' : 'Não'}</td>
+                    <td className="py-1.5 text-gray-700">{item.description}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            <p className="mt-2 text-gray-700">
+              No CSV, a primeira linha precisa ter exatamente esses nomes de coluna. Para quebrar linha dentro de uma célula
+              do Excel, use Alt+Enter.
+            </p>
+          </div>
+        </details>
       </div>
 
       {/* Apagar questões do banco (com filtros e confirmação) */}
