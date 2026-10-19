@@ -17,18 +17,19 @@ const STORAGE_KEYS = {
   ANNOTATIONS_PREFIX: 'vestibulando_neo_strokes_',
   INGESTION_LOGS: 'vestibulando_neo_logs_v1',
   EXPLANATION_OVERRIDES: 'vestibulando_neo_explanations_v1',
+  QUESTION_OVERRIDES: 'vestibulando_neo_question_edits_v1',
 };
 
 const DEFAULT_PROFILE: UserProfile = {
-  name: 'Candidato(a) Focado',
+  name: '',
   targetExam: 'ENEM',
-  targetCourse: 'Medicina / Engenharia',
+  targetCourse: '',
   dailyGoalQuestions: 15,
-  currentStreak: 4,
-  longestStreak: 12,
+  currentStreak: 0,
+  longestStreak: 0,
   lastActiveDate: new Date().toISOString().split('T')[0],
-  totalXp: 1840,
-  level: 5,
+  totalXp: 0,
+  level: 1,
 };
 
 export function deduplicateQuestions(questions: Question[]): Question[] {
@@ -49,9 +50,15 @@ export function deduplicateQuestions(questions: Question[]): Question[] {
 }
 
 /**
- * Resoluções escritas/editadas pelo aluno (id da questão -> texto). Ficam separadas da lista de
- * questões para que uma nova sincronização com as APIs não sobrescreva o que o aluno escreveu.
+ * Campos de uma questão que o aluno pode editar. As edições ficam guardadas à parte
+ * (id da questão -> campos alterados), então uma nova sincronização com as APIs não as sobrescreve
+ * e dá para voltar ao texto original de qualquer questão.
  */
+export type QuestionPatch = Partial<
+  Pick<Question, 'statement' | 'alternatives' | 'correctAlternative' | 'explanation' | 'topic' | 'difficultyLevel'>
+>;
+
+/** Resoluções salvas por versões anteriores do app (id da questão -> texto). Continuam sendo lidas. */
 function getExplanationOverrides(): Record<string, string> {
   try {
     const raw = localStorage.getItem(STORAGE_KEYS.EXPLANATION_OVERRIDES);
@@ -62,12 +69,104 @@ function getExplanationOverrides(): Record<string, string> {
   }
 }
 
-export function applyExplanationOverrides(questions: Question[]): Question[] {
-  const overrides = getExplanationOverrides();
-  if (Object.keys(overrides).length === 0) return questions;
-  return questions.map((q) =>
-    Object.prototype.hasOwnProperty.call(overrides, q.id) ? { ...q, explanation: overrides[q.id] } : q
-  );
+function getQuestionOverrides(): Record<string, QuestionPatch> {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEYS.QUESTION_OVERRIDES);
+    const parsed = raw ? JSON.parse(raw) : {};
+    return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : {};
+  } catch (e) {
+    return {};
+  }
+}
+
+function applyOverridesToQuestion(
+  question: Question,
+  overrides: Record<string, QuestionPatch>,
+  legacyExplanations: Record<string, string>
+): Question {
+  const hasLegacy = Object.prototype.hasOwnProperty.call(legacyExplanations, question.id);
+  const patch = overrides[question.id];
+  if (!hasLegacy && !patch) return question;
+  return {
+    ...question,
+    ...(hasLegacy ? { explanation: legacyExplanations[question.id] } : {}),
+    ...(patch || {}),
+  };
+}
+
+export function applyQuestionOverrides(questions: Question[]): Question[] {
+  const overrides = getQuestionOverrides();
+  const legacy = getExplanationOverrides();
+  if (Object.keys(overrides).length === 0 && Object.keys(legacy).length === 0) return questions;
+  return questions.map((q) => applyOverridesToQuestion(q, overrides, legacy));
+}
+
+/** Compatibilidade com o nome antigo. */
+export const applyExplanationOverrides = applyQuestionOverrides;
+
+/** Ids das questões que o aluno já editou (enunciado, gabarito, resolução etc.). */
+export function getEditedQuestionIds(): string[] {
+  const ids = new Set<string>([...Object.keys(getQuestionOverrides()), ...Object.keys(getExplanationOverrides())]);
+  return Array.from(ids);
+}
+
+/** Recalcula acertos/erros das tentativas de uma questão depois que o gabarito muda. */
+function recomputeAttemptsForQuestion(questionId: string, correct: string): boolean {
+  const attempts = getStoredAttempts();
+  let changed = false;
+  const next = attempts.map((a) => {
+    if (a.questionId !== questionId) return a;
+    const isCorrect = a.selectedAlternative === correct;
+    if (isCorrect === a.isCorrect) return a;
+    changed = true;
+    return { ...a, isCorrect };
+  });
+  if (changed) localStorage.setItem(STORAGE_KEYS.ATTEMPTS, JSON.stringify(next));
+  return changed;
+}
+
+export interface QuestionUpdateResult {
+  questions: Question[];
+  /** true quando o gabarito mudou e o acerto/erro de tentativas antigas foi recalculado */
+  attemptsChanged: boolean;
+}
+
+/**
+ * Salva de forma permanente alterações em uma questão (enunciado, alternativas, gabarito,
+ * resolução, conteúdo e dificuldade). Retorna null se os dados forem inválidos ou não der para gravar.
+ */
+export function updateQuestionFields(questionId: string, patch: QuestionPatch): QuestionUpdateResult | null {
+  try {
+    const base = getRawStoredQuestions().find((q) => q.id === questionId);
+    if (!base) return null;
+
+    const overrides = getQuestionOverrides();
+    const current = applyOverridesToQuestion(base, overrides, getExplanationOverrides());
+
+    const clean: QuestionPatch = {};
+    if (patch.statement !== undefined) clean.statement = patch.statement.trim();
+    if (patch.explanation !== undefined) clean.explanation = patch.explanation.trim();
+    if (patch.topic !== undefined && patch.topic.trim()) clean.topic = patch.topic.trim();
+    if (patch.difficultyLevel !== undefined) clean.difficultyLevel = patch.difficultyLevel;
+    if (patch.alternatives !== undefined) {
+      clean.alternatives = patch.alternatives.map((alt) => ({ ...alt, text: alt.text.trim() }));
+    }
+    if (patch.correctAlternative !== undefined) clean.correctAlternative = patch.correctAlternative;
+
+    const merged: Question = { ...current, ...clean };
+    if (!merged.statement.trim()) return null;
+    if (merged.alternatives.length < 2 || merged.alternatives.some((alt) => !alt.text.trim())) return null;
+    if (!merged.alternatives.some((alt) => alt.id === merged.correctAlternative)) return null;
+
+    overrides[questionId] = { ...(overrides[questionId] || {}), ...clean };
+    localStorage.setItem(STORAGE_KEYS.QUESTION_OVERRIDES, JSON.stringify(overrides));
+
+    const attemptsChanged = recomputeAttemptsForQuestion(questionId, merged.correctAlternative);
+    return { questions: getStoredQuestions(), attemptsChanged };
+  } catch (e) {
+    console.error('Falha ao salvar a edição da questão:', e);
+    return null;
+  }
 }
 
 /**
@@ -75,30 +174,45 @@ export function applyExplanationOverrides(questions: Question[]): Question[] {
  * Retorna a lista de questões atualizada, ou null se não foi possível gravar.
  */
 export function updateQuestionExplanation(questionId: string, explanation: string): Question[] | null {
-  try {
-    const overrides = getExplanationOverrides();
-    overrides[questionId] = explanation.trim();
-    localStorage.setItem(STORAGE_KEYS.EXPLANATION_OVERRIDES, JSON.stringify(overrides));
+  const result = updateQuestionFields(questionId, { explanation });
+  return result ? result.questions : null;
+}
 
-    const updated = getStoredQuestions();
-    localStorage.setItem(STORAGE_KEYS.QUESTIONS, JSON.stringify(updated));
-    return updated;
+/** Desfaz todas as edições de uma questão, voltando ao enunciado, gabarito e resolução originais. */
+export function restoreQuestionOriginal(questionId: string): QuestionUpdateResult | null {
+  try {
+    const base = getRawStoredQuestions().find((q) => q.id === questionId);
+    if (!base) return null;
+
+    const overrides = getQuestionOverrides();
+    delete overrides[questionId];
+    localStorage.setItem(STORAGE_KEYS.QUESTION_OVERRIDES, JSON.stringify(overrides));
+
+    const legacy = getExplanationOverrides();
+    if (Object.prototype.hasOwnProperty.call(legacy, questionId)) {
+      delete legacy[questionId];
+      localStorage.setItem(STORAGE_KEYS.EXPLANATION_OVERRIDES, JSON.stringify(legacy));
+    }
+
+    const attemptsChanged = recomputeAttemptsForQuestion(questionId, base.correctAlternative);
+    return { questions: getStoredQuestions(), attemptsChanged };
   } catch (e) {
-    console.error('Falha ao salvar a resolução da questão:', e);
+    console.error('Falha ao restaurar a questão original:', e);
     return null;
   }
 }
 
 /**
- * Inicializa e recupera a lista de questões armazenadas localmente, aplicando deduplicação rigorosa
+ * Lê as questões gravadas (sem as edições do aluno), semeando o banco inicial na primeira execução
+ * e aplicando deduplicação rigorosa.
  */
-export function getStoredQuestions(): Question[] {
+function getRawStoredQuestions(): Question[] {
   try {
     const raw = localStorage.getItem(STORAGE_KEYS.QUESTIONS);
     if (!raw) {
       const cleanSeed = deduplicateQuestions(INITIAL_QUESTION_SEED);
       localStorage.setItem(STORAGE_KEYS.QUESTIONS, JSON.stringify(cleanSeed));
-      return applyExplanationOverrides(cleanSeed);
+      return cleanSeed;
     }
     const parsed = JSON.parse(raw);
     const questionsList = Array.isArray(parsed) ? parsed : INITIAL_QUESTION_SEED;
@@ -106,11 +220,18 @@ export function getStoredQuestions(): Question[] {
     if (deduplicated.length !== questionsList.length) {
       localStorage.setItem(STORAGE_KEYS.QUESTIONS, JSON.stringify(deduplicated));
     }
-    return applyExplanationOverrides(deduplicated);
+    return deduplicated;
   } catch (e) {
     console.error('Falha ao ler questões do storage local:', e);
-    return applyExplanationOverrides(deduplicateQuestions(INITIAL_QUESTION_SEED));
+    return deduplicateQuestions(INITIAL_QUESTION_SEED);
   }
+}
+
+/**
+ * Inicializa e recupera a lista de questões armazenadas localmente, já com as edições do aluno
+ */
+export function getStoredQuestions(): Question[] {
+  return applyQuestionOverrides(getRawStoredQuestions());
 }
 
 /**
@@ -118,11 +239,11 @@ export function getStoredQuestions(): Question[] {
  */
 export function saveQuestions(newQuestions: Question[]): Question[] {
   try {
-    const current = getStoredQuestions();
+    const current = getRawStoredQuestions();
     const combined = [...newQuestions, ...current];
     const deduplicated = deduplicateQuestions(combined);
     localStorage.setItem(STORAGE_KEYS.QUESTIONS, JSON.stringify(deduplicated));
-    return applyExplanationOverrides(deduplicated);
+    return applyQuestionOverrides(deduplicated);
   } catch (e) {
     console.error('Falha ao salvar questões no banco local:', e);
     return getStoredQuestions();
@@ -152,14 +273,31 @@ export function matchesDeletionCriteria(question: Question, criteria: QuestionDe
 export function deleteQuestionsByFilter(
   criteria: QuestionDeletionCriteria
 ): { remaining: Question[]; removedCount: number } {
-  const current = getStoredQuestions();
+  const current = getRawStoredQuestions();
   try {
     const remaining = current.filter((q) => !matchesDeletionCriteria(q, criteria));
     localStorage.setItem(STORAGE_KEYS.QUESTIONS, JSON.stringify(remaining));
-    return { remaining, removedCount: current.length - remaining.length };
+    return { remaining: applyQuestionOverrides(remaining), removedCount: current.length - remaining.length };
   } catch (e) {
     console.error('Falha ao apagar questões do banco local:', e);
-    return { remaining: current, removedCount: 0 };
+    return { remaining: applyQuestionOverrides(current), removedCount: 0 };
+  }
+}
+
+/**
+ * Apaga do banco local as questões com os ids informados.
+ * Tentativas, revisões e rascunhos já salvos não são alterados.
+ */
+export function deleteQuestionsByIds(ids: string[]): { remaining: Question[]; removedCount: number } {
+  const idSet = new Set(ids);
+  const current = getRawStoredQuestions();
+  try {
+    const remaining = current.filter((q) => !idSet.has(q.id));
+    localStorage.setItem(STORAGE_KEYS.QUESTIONS, JSON.stringify(remaining));
+    return { remaining: applyQuestionOverrides(remaining), removedCount: current.length - remaining.length };
+  } catch (e) {
+    console.error('Falha ao apagar questões do banco local:', e);
+    return { remaining: applyQuestionOverrides(current), removedCount: 0 };
   }
 }
 
@@ -225,6 +363,81 @@ export function clearUserProgress(): UserProfile {
     console.error('Falha ao apagar o progresso do usuário:', e);
   }
   return blankProfile;
+}
+
+/** Informações do perfil que podem ser apagadas separadamente. */
+export type ProfileResetField = 'xp' | 'name' | 'course' | 'streak' | 'correct' | 'average';
+
+/**
+ * Apaga só as informações escolhidas:
+ * - xp: XP total e nível
+ * - name / course: voltam ao valor padrão
+ * - streak: ofensiva atual e maior ofensiva
+ * - correct: tentativas que foram acertos (as erradas ficam)
+ * - average: média TRI estimada, junto com as tentativas do ENEM que a calculam
+ */
+export function clearProfileFields(fields: ProfileResetField[]): { profile: UserProfile; attempts: UserAttempt[] } {
+  const chosen = new Set(fields);
+  let profile: UserProfile = { ...getStoredProfile() };
+  let attempts = getStoredAttempts();
+
+  try {
+    if (chosen.has('xp')) {
+      profile = { ...profile, totalXp: 0, level: 1 };
+    }
+    if (chosen.has('name')) {
+      profile = { ...profile, name: DEFAULT_PROFILE.name };
+    }
+    if (chosen.has('course')) {
+      profile = { ...profile, targetCourse: DEFAULT_PROFILE.targetCourse };
+    }
+    if (chosen.has('streak')) {
+      const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+      profile = { ...profile, currentStreak: 0, longestStreak: 0, lastActiveDate: yesterday };
+    }
+    if (chosen.has('correct')) {
+      attempts = attempts.filter((a) => !a.isCorrect);
+    }
+    if (chosen.has('average')) {
+      profile = { ...profile, estimatedTri: undefined };
+      attempts = attempts.filter((a) => a.vestibular !== 'ENEM');
+    }
+
+    localStorage.setItem(STORAGE_KEYS.PROFILE, JSON.stringify(profile));
+    localStorage.setItem(STORAGE_KEYS.ATTEMPTS, JSON.stringify(attempts));
+  } catch (e) {
+    console.error('Falha ao apagar informações do perfil:', e);
+  }
+  return { profile, attempts };
+}
+
+/**
+ * Apaga o histórico de tentativas de questões específicas (ou de todas, com 'ALL').
+ * Com alsoSrs, também remove o agendamento de revisão dessas questões.
+ */
+export function deleteAttemptHistory(
+  target: string[] | 'ALL',
+  alsoSrs: boolean = false
+): { attempts: UserAttempt[]; srsItems: Record<string, SrsItemData> } {
+  try {
+    const idSet = target === 'ALL' ? null : new Set(target);
+    const attempts = idSet ? getStoredAttempts().filter((a) => !idSet.has(a.questionId)) : [];
+    localStorage.setItem(STORAGE_KEYS.ATTEMPTS, JSON.stringify(attempts));
+
+    if (alsoSrs) {
+      if (!idSet) {
+        localStorage.removeItem(STORAGE_KEYS.SRS);
+      } else {
+        const items = getStoredSrsItems();
+        idSet.forEach((id) => delete items[id]);
+        localStorage.setItem(STORAGE_KEYS.SRS, JSON.stringify(items));
+      }
+    }
+    return { attempts, srsItems: getStoredSrsItems() };
+  } catch (e) {
+    console.error('Falha ao apagar o histórico de questões:', e);
+    return { attempts: getStoredAttempts(), srsItems: getStoredSrsItems() };
+  }
 }
 
 /**

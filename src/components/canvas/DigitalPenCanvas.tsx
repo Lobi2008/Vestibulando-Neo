@@ -2,11 +2,11 @@
  * @file src/components/canvas/DigitalPenCanvas.tsx
  * @description Módulo de Mesa Digitalizadora e Caneta Stylus com sensibilidade
  * à pressão nativa (Pointer Events), estabilizador de traço anti-tremor (smoothing),
- * marca-texto com transparência, suporte completo a Modo Escuro (fundo escuro e caneta branca)
- * e botão dedicado de salvamento de rascunhos.
+ * marca-texto com transparência, suporte completo a Modo Escuro (fundo escuro e caneta branca),
+ * curvas de resposta de pressão (Suave, Normal, Firme) e botão dedicado de salvamento de rascunhos.
  */
 
-import React, { useRef, useState, useEffect, useCallback } from 'react';
+import React, { useRef, useState, useEffect, useCallback, useMemo } from 'react';
 import { 
   Pen, 
   Highlighter, 
@@ -16,14 +16,26 @@ import {
   Trash2, 
   Sliders, 
   Grid, 
-  Maximize2,
-  Minimize2,
-  Sparkles,
-  X,
-  Save,
-  Check
+  Maximize2, 
+  Minimize2, 
+  Sparkles, 
+  X, 
+  Save, 
+  Check,
+  Gauge
 } from 'lucide-react';
 import type { PenTool, StylusPoint, DrawingStroke, StylusLayoutMode } from '../../types/index.ts';
+import {
+  renderAllStrokes,
+  drawLiveSegment,
+  extractPointerPressure,
+  computePointRadius,
+  getContrastAdjustedColor,
+  DEFAULT_PRESSURE_CONFIG,
+  type StylusPressureConfig,
+  type PressureCurveType,
+} from '../../utils/canvasRenderer.ts';
+import { eraseStrokesAlongSegment } from '../../utils/strokeEraser.ts';
 
 interface DigitalPenCanvasProps {
   questionId: string;
@@ -94,17 +106,42 @@ export const DigitalPenCanvas: React.FC<DigitalPenCanvasProps> = ({
   const [stabilizerLevel, setStabilizerLevel] = useState<'off' | 'medium' | 'high'>('off');
   const [paperPattern, setPaperPattern] = useState<'grid' | 'lined' | 'blank'>('grid');
   const [isExpanded, setIsExpanded] = useState<boolean>(false);
+  
+  // Configuração avançada de sensibilidade à pressão da mesa digitalizadora
+  const [isPressureEnabled, setIsPressureEnabled] = useState<boolean>(true);
+  const [pressureCurve, setPressureCurve] = useState<PressureCurveType>('normal');
   const [stylusPressure, setStylusPressure] = useState<number>(0);
   const [isPenDetected, setIsPenDetected] = useState<boolean>(false);
+  const isPenDetectedRef = useRef<boolean>(false);
   const [savedFeedback, setSavedFeedback] = useState<boolean>(false);
 
-  // Pilhas de traços para Undo / Redo
+  // Pilhas de traços para Undo / Redo (snapshots com restauração perfeita de traços apagados)
   const [strokes, setStrokes] = useState<DrawingStroke[]>(initialStrokes);
-  const [redoStack, setRedoStack] = useState<DrawingStroke[]>([]);
+  const strokesRef = useRef<DrawingStroke[]>(initialStrokes);
+  const [undoStack, setUndoStack] = useState<DrawingStroke[][]>([]);
+  const [redoStack, setRedoStack] = useState<DrawingStroke[][]>([]);
   const isDrawingRef = useRef<boolean>(false);
   const currentPointsRef = useRef<StylusPoint[]>([]);
   // Linha reta: ativada ao pressionar o canvas com Ctrl; guarda só início e fim
   const isStraightLineRef = useRef<boolean>(false);
+
+  // Rastreamento para borracha de traço por completo estilo OneNote
+  const strokesAtGestureStartRef = useRef<DrawingStroke[]>([]);
+  const hasErasedInCurrentGestureRef = useRef<boolean>(false);
+  const lastEraserPointRef = useRef<StylusPoint | null>(null);
+
+  // Sincroniza referência de traços
+  useEffect(() => {
+    strokesRef.current = strokes;
+  }, [strokes]);
+
+  const pressureConfig: StylusPressureConfig = useMemo(() => ({
+    sensitivity: isPressureEnabled ? 1.0 : 0,
+    curve: pressureCurve,
+    minWidthRatio: isPressureEnabled ? 0.22 : 1.0,
+    maxWidthRatio: isPressureEnabled ? 2.35 : 1.0,
+    enabled: isPressureEnabled,
+  }), [isPressureEnabled, pressureCurve]);
 
   // Sincroniza cor da caneta quando o modo escuro/claro alterna
   useEffect(() => {
@@ -122,100 +159,32 @@ export const DigitalPenCanvas: React.FC<DigitalPenCanvasProps> = ({
   // Sincroniza quando a questão mudar
   useEffect(() => {
     setStrokes(initialStrokes);
+    strokesRef.current = initialStrokes;
+    setUndoStack([]);
     setRedoStack([]);
   }, [questionId, initialStrokes]);
 
-  // Redesenha todos os traços no canvas com suporte inteligente de contraste
-  const renderStrokes = useCallback((canvas: HTMLCanvasElement, strokeList: DrawingStroke[], dark: boolean) => {
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-    for (const stroke of strokeList) {
-      if (stroke.points.length === 0) continue;
-
-      ctx.save();
-      ctx.lineCap = 'round';
-      ctx.lineJoin = 'round';
-
-      // Ajusta cor para manter legibilidade se alternar modo claro/escuro
-      let renderColor = stroke.color;
-      if (dark && (renderColor === '#111111' || renderColor === '#000000')) {
-        renderColor = '#FFFFFF';
-      } else if (!dark && renderColor === '#FFFFFF') {
-        renderColor = '#111111';
-      }
-
-      if (stroke.tool === 'highlighter') {
-        ctx.globalAlpha = dark ? 0.6 : 0.45;
-        ctx.strokeStyle = renderColor;
-        ctx.lineWidth = stroke.width * 4;
-        ctx.globalCompositeOperation = dark ? 'screen' : 'multiply';
-      } else if (stroke.tool === 'eraser') {
-        ctx.globalCompositeOperation = 'destination-out';
-        ctx.lineWidth = stroke.width * 5;
-      } else {
-        ctx.globalAlpha = 1.0;
-        ctx.strokeStyle = renderColor;
-        ctx.lineWidth = stroke.width;
-        ctx.globalCompositeOperation = 'source-over';
-      }
-
-      const pts = stroke.points;
-      if (pts.length === 1) {
-        ctx.beginPath();
-        ctx.arc(pts[0].x, pts[0].y, (stroke.width * (pts[0].pressure || 1)) / 2, 0, Math.PI * 2);
-        ctx.fillStyle = renderColor;
-        ctx.fill();
-      } else if (pts.length === 2) {
-        ctx.beginPath();
-        ctx.moveTo(pts[0].x, pts[0].y);
-        ctx.lineTo(pts[1].x, pts[1].y);
-        ctx.stroke();
-      } else {
-        // Suavização Bézier quadrática contínua entre pontos médios
-        ctx.beginPath();
-        ctx.moveTo(pts[0].x, pts[0].y);
-
-        for (let i = 1; i < pts.length - 1; i++) {
-          const midX = (pts[i].x + pts[i + 1].x) / 2;
-          const midY = (pts[i].y + pts[i + 1].y) / 2;
-          ctx.quadraticCurveTo(pts[i].x, pts[i].y, midX, midY);
-        }
-
-        const last = pts[pts.length - 1];
-        ctx.lineTo(last.x, last.y);
-        ctx.stroke();
-      }
-
-      ctx.restore();
-    }
-  }, []);
-
-  // Redimensiona o canvas dinamicamente acompanhando o container
+  // Redimensiona o canvas dinamicamente acompanhando o container e DPR nítido
   const updateCanvasDimensions = useCallback(() => {
     const canvas = canvasRef.current;
     const container = containerRef.current;
     if (!canvas || !container) return;
 
     const rect = container.getBoundingClientRect();
-    const dpr = window.devicePixelRatio || 1;
+    const dpr = typeof window !== 'undefined' ? window.devicePixelRatio || 1 : 1;
 
-    if (canvas.width !== Math.floor(rect.width * dpr) || canvas.height !== Math.floor(rect.height * dpr)) {
-      canvas.width = Math.max(300, Math.floor(rect.width * dpr));
-      canvas.height = Math.max(250, Math.floor(rect.height * dpr));
+    const targetW = Math.max(300, Math.floor(rect.width * dpr));
+    const targetH = Math.max(250, Math.floor(rect.height * dpr));
+
+    if (canvas.width !== targetW || canvas.height !== targetH) {
+      canvas.width = targetW;
+      canvas.height = targetH;
       canvas.style.width = `${rect.width}px`;
       canvas.style.height = `${rect.height}px`;
-
-      const ctx = canvas.getContext('2d');
-      if (ctx) {
-        ctx.scale(dpr, dpr);
-      }
     }
 
-    renderStrokes(canvas, strokes, effectiveDark);
-  }, [renderStrokes, strokes, effectiveDark]);
+    renderAllStrokes(canvas, strokes, effectiveDark, pressureConfig);
+  }, [strokes, effectiveDark, pressureConfig]);
 
   useEffect(() => {
     updateCanvasDimensions();
@@ -223,14 +192,14 @@ export const DigitalPenCanvas: React.FC<DigitalPenCanvasProps> = ({
     return () => window.removeEventListener('resize', updateCanvasDimensions);
   }, [updateCanvasDimensions]);
 
-  // Re-renderiza traços ao mudar o modo escuro
+  // Re-renderiza traços ao mudar o modo escuro ou configuração de pressão
   useEffect(() => {
     if (canvasRef.current) {
-      renderStrokes(canvasRef.current, strokes, effectiveDark);
+      renderAllStrokes(canvasRef.current, strokes, effectiveDark, pressureConfig);
     }
-  }, [effectiveDark, renderStrokes, strokes]);
+  }, [effectiveDark, strokes, pressureConfig]);
 
-  // Algoritmo de suavização do estabilizador
+  // Algoritmo de suavização do estabilizador anti-tremor
   const filterPointWithStabilizer = (rawPoint: StylusPoint, history: StylusPoint[]): StylusPoint => {
     if (stabilizerLevel === 'off' || history.length === 0) {
       return rawPoint;
@@ -258,101 +227,196 @@ export const DigitalPenCanvas: React.FC<DigitalPenCanvasProps> = ({
     };
   };
 
-  // Tratadores de eventos Pointer nativos
+  // Tratadores de eventos Pointer nativos (Pointer Events API com sensibilidade à pressão)
   const handlePointerDown = (e: React.PointerEvent<HTMLCanvasElement>) => {
     const canvas = canvasRef.current;
     if (!canvas) return;
 
-    if (e.pointerType === 'pen') {
+    // Detecta mesa digitalizadora de forma síncrona e extrai pressão real
+    const { pressure, isPen } = extractPointerPressure(e, isPenDetectedRef.current);
+    if (isPen) {
+      isPenDetectedRef.current = true;
       setIsPenDetected(true);
     }
 
-    canvas.setPointerCapture(e.pointerId);
+    // Suporte nativo ao botão ou ponta de borracha da caneta stylus
+    const isStylusEraser = isPen && ((e.buttons & 32) !== 0 || e.button === 5);
+    const effectiveTool = isStylusEraser ? 'eraser' : activeTool;
+
+    try {
+      canvas.setPointerCapture(e.pointerId);
+    } catch {
+      // Ignora erro em ambientes sem pointer capture
+    }
+
     isDrawingRef.current = true;
+    strokesAtGestureStartRef.current = strokesRef.current;
+    hasErasedInCurrentGestureRef.current = false;
 
     const rect = canvas.getBoundingClientRect();
-    const rawPressure = e.pressure > 0 ? e.pressure : 0.5;
-    setStylusPressure(rawPressure);
+    setStylusPressure(pressure);
 
     const initialPoint: StylusPoint = {
       x: e.clientX - rect.left,
       y: e.clientY - rect.top,
-      pressure: rawPressure,
+      pressure,
       time: Date.now(),
     };
 
+    // MODO BORRACHA ESTILO ONENOTE: apaga traços por completo ao tocar
+    if (effectiveTool === 'eraser') {
+      lastEraserPointRef.current = initialPoint;
+      const eraserRadius = Math.max(baseWidth * 2.5, 14);
+      const { remainingStrokes, erasedStrokes } = eraseStrokesAlongSegment(
+        strokesRef.current,
+        initialPoint,
+        null,
+        eraserRadius
+      );
+      if (erasedStrokes.length > 0) {
+        hasErasedInCurrentGestureRef.current = true;
+        strokesRef.current = remainingStrokes;
+        setStrokes(remainingStrokes);
+        renderAllStrokes(canvas, remainingStrokes, effectiveDark, pressureConfig);
+      }
+      return;
+    }
+
     currentPointsRef.current = [initialPoint];
     isStraightLineRef.current = e.ctrlKey;
+
+    // Desenha imediatamente o ponto inicial com espessura proporcional à pressão
+    const ctx = canvas.getContext('2d');
+    if (ctx && !isStraightLineRef.current) {
+      const dpr = typeof window !== 'undefined' ? window.devicePixelRatio || 1 : 1;
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+      const r = computePointRadius(baseWidth, pressure, effectiveTool, pressureConfig);
+      ctx.save();
+      const renderColor = getContrastAdjustedColor(
+        effectiveTool === 'highlighter' ? highlighterColor : selectedColor,
+        effectiveDark
+      );
+      ctx.fillStyle = renderColor;
+      ctx.beginPath();
+      ctx.arc(initialPoint.x, initialPoint.y, r, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    }
   };
 
   const handlePointerMove = (e: React.PointerEvent<HTMLCanvasElement>) => {
+    // Monitora pressão em tempo real (mesmo em hover próximo ao canvas)
+    const { pressure, isPen } = extractPointerPressure(e, isPenDetectedRef.current);
+    if (isPen) {
+      isPenDetectedRef.current = true;
+      if (!isPenDetected) setIsPenDetected(true);
+    }
+    setStylusPressure(pressure);
+
     if (!isDrawingRef.current) return;
     const canvas = canvasRef.current;
     if (!canvas) return;
 
     const rect = canvas.getBoundingClientRect();
-    const rawPressure = e.pressure > 0 ? e.pressure : 0.5;
-    setStylusPressure(rawPressure);
 
-    const rawPoint: StylusPoint = {
-      x: e.clientX - rect.left,
-      y: e.clientY - rect.top,
-      pressure: rawPressure,
-      time: Date.now(),
-    };
+    // Suporte ao botão ou ponta de borracha da caneta
+    const isStylusEraser = isPen && ((e.buttons & 32) !== 0 || e.button === 5);
+    const effectiveTool = isStylusEraser ? 'eraser' : activeTool;
 
-    // Ctrl pressionado no início: pré-visualiza uma linha reta do ponto inicial até o cursor
-    if (isStraightLineRef.current) {
-      const start = currentPointsRef.current[0];
-      currentPointsRef.current = [start, rawPoint];
-      const preview: DrawingStroke = {
-        id: 'preview-straight-line',
-        tool: activeTool,
-        color: activeTool === 'highlighter' ? highlighterColor : selectedColor,
-        width: baseWidth,
-        points: currentPointsRef.current,
-      };
-      renderStrokes(canvas, [...strokes, preview], effectiveDark);
+    // Coalesced Events: processa micro-pontos intermediários de alta taxa de atualização (120Hz/240Hz)
+    const nativeEvt = e.nativeEvent as PointerEvent;
+    const coalescedEvents = (typeof nativeEvt.getCoalescedEvents === 'function')
+      ? nativeEvt.getCoalescedEvents()
+      : [e];
+
+    // MODO BORRACHA ESTILO ONENOTE: ao arrastar a borracha, apaga qualquer traço colidido por completo
+    if (effectiveTool === 'eraser') {
+      const eraserRadius = Math.max(baseWidth * 2.5, 14);
+      let strokesChanged = false;
+
+      for (const evt of coalescedEvents) {
+        const rawPoint: StylusPoint = {
+          x: evt.clientX - rect.left,
+          y: evt.clientY - rect.top,
+          pressure: 0.5,
+          time: Date.now(),
+        };
+
+        const prevPoint = lastEraserPointRef.current || rawPoint;
+        const { remainingStrokes, erasedStrokes } = eraseStrokesAlongSegment(
+          strokesRef.current,
+          prevPoint,
+          rawPoint,
+          eraserRadius
+        );
+        lastEraserPointRef.current = rawPoint;
+
+        if (erasedStrokes.length > 0) {
+          hasErasedInCurrentGestureRef.current = true;
+          strokesRef.current = remainingStrokes;
+          strokesChanged = true;
+        }
+      }
+
+      if (strokesChanged) {
+        setStrokes([...strokesRef.current]);
+        renderAllStrokes(canvas, strokesRef.current, effectiveDark, pressureConfig);
+      }
       return;
     }
 
-    const smoothed = filterPointWithStabilizer(rawPoint, currentPointsRef.current);
-    currentPointsRef.current.push(smoothed);
-
-    // Desenha em tempo real
     const ctx = canvas.getContext('2d');
-    if (ctx && currentPointsRef.current.length > 1) {
-      const pts = currentPointsRef.current;
-      const p1 = pts[pts.length - 2];
-      const p2 = pts[pts.length - 1];
+    if (ctx) {
+      const dpr = typeof window !== 'undefined' ? window.devicePixelRatio || 1 : 1;
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    }
 
-      ctx.save();
-      ctx.lineCap = 'round';
-      ctx.lineJoin = 'round';
+    for (const evt of coalescedEvents) {
+      const { pressure: subPressure } = extractPointerPressure(evt, isPenDetectedRef.current);
+      const rawPoint: StylusPoint = {
+        x: evt.clientX - rect.left,
+        y: evt.clientY - rect.top,
+        pressure: subPressure,
+        time: Date.now(),
+      };
 
-      const strokeColor = activeTool === 'highlighter' ? highlighterColor : selectedColor;
-      const pressureMultiplier = isPenDetected ? Math.max(0.4, p2.pressure * 1.8) : 1.0;
-
-      if (activeTool === 'highlighter') {
-        ctx.globalAlpha = effectiveDark ? 0.6 : 0.45;
-        ctx.strokeStyle = strokeColor;
-        ctx.lineWidth = baseWidth * 4;
-        ctx.globalCompositeOperation = effectiveDark ? 'screen' : 'multiply';
-      } else if (activeTool === 'eraser') {
-        ctx.globalCompositeOperation = 'destination-out';
-        ctx.lineWidth = baseWidth * 6;
-      } else {
-        ctx.globalAlpha = 1.0;
-        ctx.strokeStyle = strokeColor;
-        ctx.lineWidth = baseWidth * pressureMultiplier;
-        ctx.globalCompositeOperation = 'source-over';
+      // Ctrl pressionado no início: pré-visualiza linha reta até a ponta atual
+      if (isStraightLineRef.current) {
+        const start = currentPointsRef.current[0];
+        currentPointsRef.current = [start, rawPoint];
+        const preview: DrawingStroke = {
+          id: 'preview-straight-line',
+          tool: effectiveTool,
+          color: effectiveTool === 'highlighter' ? highlighterColor : selectedColor,
+          width: baseWidth,
+          points: currentPointsRef.current,
+        };
+        renderAllStrokes(canvas, [...strokesRef.current, preview], effectiveDark, pressureConfig);
+        return;
       }
 
-      ctx.beginPath();
-      ctx.moveTo(p1.x, p1.y);
-      ctx.lineTo(p2.x, p2.y);
-      ctx.stroke();
-      ctx.restore();
+      // Ignora micro-jitter estático (< 0.5px de distância e pressão idêntica)
+      const lastPoint = currentPointsRef.current[currentPointsRef.current.length - 1];
+      if (lastPoint) {
+        const dx = rawPoint.x - lastPoint.x;
+        const dy = rawPoint.y - lastPoint.y;
+        if (dx * dx + dy * dy < 0.25 && Math.abs(rawPoint.pressure - lastPoint.pressure) < 0.02) {
+          continue;
+        }
+      }
+
+      const smoothed = filterPointWithStabilizer(rawPoint, currentPointsRef.current);
+      currentPointsRef.current.push(smoothed);
+
+      if (ctx && currentPointsRef.current.length > 1) {
+        const pts = currentPointsRef.current;
+        const p1 = pts[pts.length - 2];
+        const p2 = pts[pts.length - 1];
+        const strokeColor = effectiveTool === 'highlighter' ? highlighterColor : selectedColor;
+
+        drawLiveSegment(ctx, p1, p2, baseWidth, effectiveTool, strokeColor, effectiveDark, pressureConfig);
+      }
     }
   };
 
@@ -362,225 +426,255 @@ export const DigitalPenCanvas: React.FC<DigitalPenCanvasProps> = ({
 
     const canvas = canvasRef.current;
     if (canvas && canvas.hasPointerCapture(e.pointerId)) {
-      canvas.releasePointerCapture(e.pointerId);
+      try {
+        canvas.releasePointerCapture(e.pointerId);
+      } catch {}
+    }
+
+    const isStylusEraser = isPenDetectedRef.current && ((e.buttons & 32) !== 0 || e.button === 5);
+    const effectiveTool = isStylusEraser ? 'eraser' : activeTool;
+
+    // Conclusão do gesto de borracha estilo OneNote
+    if (effectiveTool === 'eraser') {
+      lastEraserPointRef.current = null;
+      if (hasErasedInCurrentGestureRef.current) {
+        // Salva estado anterior na pilha de Undo para permitir restaurar os traços com Ctrl+Z
+        setUndoStack((prev) => [...prev, strokesAtGestureStartRef.current]);
+        setRedoStack([]);
+        onSaveStrokes?.(strokesRef.current);
+        hasErasedInCurrentGestureRef.current = false;
+      }
+      currentPointsRef.current = [];
+      return;
     }
 
     if (currentPointsRef.current.length > 0) {
-      const finalColor = activeTool === 'highlighter' ? highlighterColor : selectedColor;
+      const finalColor = effectiveTool === 'highlighter' ? highlighterColor : selectedColor;
+
       const newStroke: DrawingStroke = {
         id: `stroke-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
-        tool: activeTool,
+        tool: effectiveTool,
         color: finalColor,
         width: baseWidth,
         points: [...currentPointsRef.current],
       };
 
-      const updated = [...strokes, newStroke];
-      setStrokes(updated);
+      const updated = [...strokesRef.current, newStroke];
+      setUndoStack((prev) => [...prev, strokesAtGestureStartRef.current]);
       setRedoStack([]);
+      strokesRef.current = updated;
+      setStrokes(updated);
       // Salva automaticamente no banco local
       onSaveStrokes?.(updated);
+
+      // Redesenha de forma completa com geometria contínua de largura variável
+      if (canvas) {
+        renderAllStrokes(canvas, updated, effectiveDark, pressureConfig);
+      }
     }
 
     currentPointsRef.current = [];
     isStraightLineRef.current = false;
   };
 
-  // Undo / Redo
+  // Undo / Redo com snapshots completos de traços
   const handleUndo = useCallback(() => {
-    if (strokes.length === 0) return;
-    const last = strokes[strokes.length - 1];
-    const remaining = strokes.slice(0, -1);
-    setStrokes(remaining);
-    setRedoStack((prev) => [last, ...prev]);
-    onSaveStrokes?.(remaining);
+    if (undoStack.length === 0) return;
+    const previousState = undoStack[undoStack.length - 1];
+    const nextUndoStack = undoStack.slice(0, -1);
+    setRedoStack((prev) => [...prev, strokesRef.current]);
+    setUndoStack(nextUndoStack);
+    strokesRef.current = previousState;
+    setStrokes(previousState);
+    onSaveStrokes?.(previousState);
     if (canvasRef.current) {
-      renderStrokes(canvasRef.current, remaining, effectiveDark);
+      renderAllStrokes(canvasRef.current, previousState, effectiveDark, pressureConfig);
     }
-  }, [strokes, onSaveStrokes, renderStrokes, effectiveDark]);
+  }, [undoStack, onSaveStrokes, effectiveDark, pressureConfig]);
 
   const handleRedo = useCallback(() => {
     if (redoStack.length === 0) return;
-    const [next, ...restRedo] = redoStack;
-    const updated = [...strokes, next];
-    setStrokes(updated);
-    setRedoStack(restRedo);
-    onSaveStrokes?.(updated);
+    const nextState = redoStack[redoStack.length - 1];
+    const nextRedoStack = redoStack.slice(0, -1);
+    setUndoStack((prev) => [...prev, strokesRef.current]);
+    setRedoStack(nextRedoStack);
+    strokesRef.current = nextState;
+    setStrokes(nextState);
+    onSaveStrokes?.(nextState);
     if (canvasRef.current) {
-      renderStrokes(canvasRef.current, updated, effectiveDark);
+      renderAllStrokes(canvasRef.current, nextState, effectiveDark, pressureConfig);
     }
-  }, [strokes, redoStack, onSaveStrokes, renderStrokes, effectiveDark]);
+  }, [redoStack, onSaveStrokes, effectiveDark, pressureConfig]);
 
-  // Atalho de teclado CTRL+Z para desfazer traços
+  const handleClearAll = useCallback(() => {
+    if (strokesRef.current.length === 0) return;
+    setUndoStack((prev) => [...prev, strokesRef.current]);
+    setRedoStack([]);
+    strokesRef.current = [];
+    setStrokes([]);
+    onSaveStrokes?.([]);
+    if (canvasRef.current) {
+      renderAllStrokes(canvasRef.current, [], effectiveDark, pressureConfig);
+    }
+  }, [onSaveStrokes, effectiveDark, pressureConfig]);
+
+  const handleManualSave = useCallback(() => {
+    onSaveStrokes?.(strokesRef.current);
+    setSavedFeedback(true);
+    setTimeout(() => {
+      setSavedFeedback(false);
+    }, 1500);
+  }, [onSaveStrokes]);
+
+  // Atalhos de teclado (Ctrl+Z, Ctrl+Y)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z' && !e.shiftKey) {
-        if (!['INPUT', 'TEXTAREA'].includes((e.target as HTMLElement)?.tagName)) {
-          e.preventDefault();
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') {
+        if (e.shiftKey) {
+          handleRedo();
+        } else {
           handleUndo();
         }
-      } else if ((e.ctrlKey || e.metaKey) && (e.key.toLowerCase() === 'y' || (e.shiftKey && e.key.toLowerCase() === 'z'))) {
-        if (!['INPUT', 'TEXTAREA'].includes((e.target as HTMLElement)?.tagName)) {
-          e.preventDefault();
-          handleRedo();
-        }
+      } else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'y') {
+        handleRedo();
       }
     };
+
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [handleUndo, handleRedo]);
 
-  const handleClearAll = () => {
-    setStrokes([]);
-    setRedoStack([]);
-    onSaveStrokes?.([]);
-    if (canvasRef.current) {
-      const ctx = canvasRef.current.getContext('2d');
-      if (ctx) ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
-    }
-  };
-
-  // Salvar explicitamente com confirmação visual
-  const handleManualSave = () => {
-    onSaveStrokes?.(strokes);
-    setSavedFeedback(true);
-    setTimeout(() => setSavedFeedback(false), 2000);
-  };
-
-  const penColorPalette = effectiveDark ? DARK_PEN_COLORS : LIGHT_PEN_COLORS;
-
-  const patternClass =
-    mode === 'scratchpad'
-      ? effectiveDark
-        ? paperPattern === 'grid'
-          ? 'bg-grid-pattern-dark bg-[#18181B]'
-          : paperPattern === 'lined'
-          ? 'bg-lined-pattern-dark bg-[#18181B]'
-          : 'bg-[#18181B]'
-        : paperPattern === 'grid'
-        ? 'bg-grid-pattern bg-[#FEFDF9] dark:bg-surface-2'
-        : paperPattern === 'lined'
-        ? 'bg-lined-pattern bg-[#FEFDF9] dark:bg-surface-2'
-        : 'bg-[#FFFFFF] dark:bg-surface-2'
-      : 'bg-transparent';
+  const patternClass = useMemo(() => {
+    if (mode === 'overlay') return 'bg-transparent';
+    if (paperPattern === 'blank') return effectiveDark ? 'bg-[#18181B]' : 'bg-[#FFFDF9]';
+    if (paperPattern === 'lined') return effectiveDark ? 'bg-lined-pattern-dark bg-[#18181B]' : 'bg-lined-pattern bg-[#FFFDF9]';
+    return effectiveDark ? 'bg-grid-pattern-dark bg-[#18181B]' : 'bg-grid-pattern bg-[#FFFDF9]';
+  }, [mode, paperPattern, effectiveDark]);
 
   return (
     <div
       ref={containerRef}
-      className={`flex flex-col ${
-        mode === 'overlay'
-          ? 'bg-transparent border-3 border-dashed border-[#FF3366]'
-          : 'neo-border bg-surface-2 '
-      } transition-colors duration-150 ${
-        isExpanded ? 'fixed inset-4 z-50 shadow-2xl' : 'relative'
+      className={`flex flex-col bg-surface neo-border neo-shadow overflow-hidden transition-all ${
+        isExpanded ? 'fixed inset-4 z-50 shadow-2xl' : 'relative h-full w-full'
       } ${className}`}
     >
-      {/* Barra Superior de Controles Neobrutalistas */}
-      <div
-        className={`flex flex-wrap items-center justify-between gap-2 px-3 py-2 ${
-          mode === 'overlay'
-            ? 'bg-[#FF3366] text-white'
-            : 'bg-primary text-black dark:text-white'
-        } border-b-3 border-[#111111] dark:border-gray-700`}
-      >
-        {mode === 'overlay' && (
-          <span className="text-xs font-black uppercase tracking-wider bg-black text-white px-2 py-0.5 mr-1">
-            ✍️ Riscar sobre o texto
-          </span>
-        )}
-
-        {/* Ferramentas de Desenho */}
+      {/* Barra de Ferramentas Neobrutalista */}
+      <div className="flex flex-wrap items-center justify-between gap-2 p-2 bg-primary border-b-3 border-black dark:border-gray-700">
+        {/* Ferramentas Principais: Caneta, Marca-Texto, Borracha */}
         <div className="flex items-center gap-1">
           <button
             type="button"
             onClick={() => setActiveTool('pen')}
-            className={`p-1.5 flex items-center gap-1 text-xs font-bold neo-border-sm transition-colors ${
+            className={`p-2 neo-border-sm flex items-center gap-1.5 font-bold text-xs ${
               activeTool === 'pen'
-                ? 'bg-[#111111] text-white dark:bg-[#00F0FF] dark:text-black shadow-none'
+                ? 'bg-black text-white dark:bg-[#00F0FF] dark:text-black shadow-[2px_2px_0px_#000]'
                 : 'bg-surface text-ink hover:bg-yellow-100 dark:hover:bg-gray-700'
             }`}
-            title="Caneta"
+            title="Caneta com sensibilidade à pressão"
           >
-            <Pen className="w-3.5 h-3.5" />
+            <Pen className="w-4 h-4" />
             <span className="hidden sm:inline">Caneta</span>
           </button>
 
           <button
             type="button"
             onClick={() => setActiveTool('highlighter')}
-            className={`p-1.5 flex items-center gap-1 text-xs font-bold neo-border-sm transition-colors ${
+            className={`p-2 neo-border-sm flex items-center gap-1.5 font-bold text-xs ${
               activeTool === 'highlighter'
-                ? 'bg-[#111111] text-white dark:bg-[#00F0FF] dark:text-black shadow-none'
+                ? 'bg-black text-white dark:bg-[#00F0FF] dark:text-black shadow-[2px_2px_0px_#000]'
                 : 'bg-surface text-ink hover:bg-yellow-100 dark:hover:bg-gray-700'
             }`}
-            title="Marca-texto"
+            title="Marca-texto translúcido"
           >
-            <Highlighter className="w-3.5 h-3.5" />
+            <Highlighter className="w-4 h-4" />
             <span className="hidden sm:inline">Marca-texto</span>
           </button>
 
           <button
             type="button"
             onClick={() => setActiveTool('eraser')}
-            className={`p-1.5 flex items-center gap-1 text-xs font-bold neo-border-sm transition-colors ${
+            className={`p-2 neo-border-sm flex items-center gap-1.5 font-bold text-xs ${
               activeTool === 'eraser'
-                ? 'bg-[#111111] text-white dark:bg-[#00F0FF] dark:text-black shadow-none'
+                ? 'bg-black text-white dark:bg-[#00F0FF] dark:text-black shadow-[2px_2px_0px_#000]'
                 : 'bg-surface text-ink hover:bg-yellow-100 dark:hover:bg-gray-700'
             }`}
-            title="Borracha"
+            title="Borracha de traço (apaga o traço inteiro por completo, estilo OneNote)"
           >
-            <Eraser className="w-3.5 h-3.5" />
+            <Eraser className="w-4 h-4" />
             <span className="hidden sm:inline">Borracha</span>
           </button>
         </div>
 
-        {/* Paleta de Cores Rápida */}
-        <div className="flex items-center gap-1.5 bg-surface px-2 py-1 neo-border-sm">
-          {activeTool === 'highlighter' ? (
-            HIGHLIGHTER_COLORS.map((col) => (
-              <button
-                key={col.hex}
-                type="button"
-                onClick={() => setHighlighterColor(col.hex)}
-                className={`w-4 h-4 rounded-full border border-black dark:border-white transition-transform ${
-                  highlighterColor === col.hex ? 'scale-125 ring-2 ring-black dark:ring-white' : 'hover:scale-110'
-                }`}
-                style={{ backgroundColor: col.hex }}
-                title={col.name}
-              />
-            ))
-          ) : (
-            penColorPalette.map((col) => (
-              <button
-                key={col.hex}
-                type="button"
-                onClick={() => setSelectedColor(col.hex)}
-                className={`w-4 h-4 rounded-full border border-black dark:border-gray-400 transition-transform ${
-                  selectedColor === col.hex ? 'scale-125 ring-2 ring-black dark:ring-white' : 'hover:scale-110'
-                }`}
-                style={{ backgroundColor: col.hex }}
-                title={col.name}
-              />
-            ))
-          )}
-        </div>
-
-        {/* Espessura, Papel e Estabilizador */}
+        {/* Cores e Espessura */}
         <div className="flex items-center gap-2">
-          {/* Espessura */}
-          <div className="flex items-center gap-1 text-xs font-bold bg-surface px-1.5 py-0.5 neo-border-sm">
-            <span className="text-[10px] text-gray-600 dark:text-ink-muted">Traço:</span>
+          {activeTool === 'pen' && (
+            <div className="flex items-center gap-1 bg-surface p-1 neo-border-sm">
+              {(effectiveDark ? DARK_PEN_COLORS : LIGHT_PEN_COLORS).map((c) => (
+                <button
+                  key={c.hex}
+                  type="button"
+                  onClick={() => setSelectedColor(c.hex)}
+                  className={`w-5 h-5 rounded-none border-2 transition-transform ${
+                    selectedColor === c.hex ? 'scale-110 border-black ring-2 ring-primary' : 'border-transparent hover:scale-105'
+                  }`}
+                  style={{ backgroundColor: c.hex }}
+                  title={c.name}
+                />
+              ))}
+            </div>
+          )}
+
+          {activeTool === 'highlighter' && (
+            <div className="flex items-center gap-1 bg-surface p-1 neo-border-sm">
+              {HIGHLIGHTER_COLORS.map((c) => (
+                <button
+                  key={c.hex}
+                  type="button"
+                  onClick={() => setHighlighterColor(c.hex)}
+                  className={`w-5 h-5 rounded-none border-2 transition-transform ${
+                    highlighterColor === c.hex ? 'scale-110 border-black ring-2 ring-primary' : 'border-transparent hover:scale-105'
+                  }`}
+                  style={{ backgroundColor: c.hex }}
+                  title={c.name}
+                />
+              ))}
+            </div>
+          )}
+
+          {/* Slider de Espessura Base */}
+          <div className="flex items-center gap-1.5 bg-surface px-2 py-1 neo-border-sm">
+            <span className="text-[10px] font-black uppercase text-ink">Tam</span>
             <input
               type="range"
               min="1"
-              max="8"
+              max="12"
               value={baseWidth}
               onChange={(e) => setBaseWidth(Number(e.target.value))}
-              className="w-14 accent-black dark:accent-[#00F0FF] cursor-pointer"
-              title={`Espessura: ${baseWidth}px`}
+              className="w-16 h-2 accent-black dark:accent-[#00F0FF] cursor-pointer"
+              title={`Espessura base: ${baseWidth}px`}
             />
-            <span className="text-[10px] font-mono text-ink">{baseWidth}px</span>
+            <span className="text-[10px] font-mono font-bold text-ink">{baseWidth}px</span>
           </div>
+
+          {/* Alternância de Curva de Pressão */}
+          <button
+            type="button"
+            onClick={() =>
+              setPressureCurve((prev) =>
+                prev === 'normal' ? 'soft' : prev === 'soft' ? 'firm' : 'normal'
+              )
+            }
+            className={`px-2 py-1 text-[11px] font-black neo-border-sm flex items-center gap-1 ${
+              isPressureEnabled
+                ? 'bg-surface text-ink hover:bg-yellow-100 dark:hover:bg-gray-700'
+                : 'bg-gray-300 dark:bg-gray-800 text-gray-500 opacity-60'
+            }`}
+            title="Curva de resposta de pressão da mesa (Suave, Normal, Firme)"
+          >
+            <Gauge className="w-3 h-3 text-[#FF5A36] dark:text-[#00F0FF]" />
+            <span className="hidden sm:inline">Pressão:</span>
+            <span className="capitalize">{pressureCurve === 'soft' ? 'Suave' : pressureCurve === 'firm' ? 'Firme' : 'Normal'}</span>
+          </button>
 
           {/* Estabilizador Anti-Tremor */}
           <button
@@ -592,8 +686,8 @@ export const DigitalPenCanvas: React.FC<DigitalPenCanvasProps> = ({
             }
             className={`px-2 py-1 text-[11px] font-bold neo-border-sm flex items-center gap-1 ${
               stabilizerLevel !== 'off'
-                ? 'bg-[#00E599] text-black'
-                : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-ink-muted '
+                ? 'bg-[#00E599] text-black font-black'
+                : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-ink-muted'
             }`}
             title="Estabilizador de traço (reduz tremores)"
           >
@@ -612,7 +706,7 @@ export const DigitalPenCanvas: React.FC<DigitalPenCanvasProps> = ({
                 )
               }
               className="px-2 py-1 text-[11px] font-bold bg-surface text-ink neo-border-sm flex items-center gap-1 hover:bg-gray-100 dark:hover:bg-gray-700"
-              title="Trocar papel"
+              title="Trocar padrão de fundo do papel"
             >
               <Grid className="w-3 h-3" />
               <span className="capitalize">{paperPattern === 'grid' ? 'Quadriculado' : paperPattern === 'lined' ? 'Pautado' : 'Liso'}</span>
@@ -623,12 +717,12 @@ export const DigitalPenCanvas: React.FC<DigitalPenCanvasProps> = ({
           <button
             type="button"
             onClick={handleManualSave}
-            className={`px-2 py-1 text-xs font-black neo-border-sm flex items-center gap-1 transition-transform ${
+            className={`px-2.5 py-1 text-xs font-black neo-border-sm flex items-center gap-1 transition-transform ${
               savedFeedback 
                 ? 'bg-[#00E599] text-black scale-105' 
                 : 'bg-surface text-black dark:text-white hover:bg-green-100 dark:hover:bg-green-950'
             }`}
-            title="Salvar rascunho"
+            title="Salvar rascunho manualmente"
           >
             {savedFeedback ? (
               <>
@@ -643,12 +737,12 @@ export const DigitalPenCanvas: React.FC<DigitalPenCanvasProps> = ({
             )}
           </button>
 
-          {/* Ações de Histórico */}
+          {/* Ações de Histórico: Undo, Redo, Clear */}
           <div className="flex items-center gap-1">
             <button
               type="button"
               onClick={handleUndo}
-              disabled={strokes.length === 0}
+              disabled={undoStack.length === 0}
               className="p-1.5 bg-surface neo-border-sm disabled:opacity-40 hover:bg-gray-100 dark:hover:bg-gray-700"
               title="Desfazer (Ctrl+Z)"
             >
@@ -668,7 +762,7 @@ export const DigitalPenCanvas: React.FC<DigitalPenCanvasProps> = ({
               onClick={handleClearAll}
               disabled={strokes.length === 0}
               className="p-1.5 bg-[#FF3366] text-white neo-border-sm disabled:opacity-40 hover:bg-red-600"
-              title="Limpar"
+              title="Limpar todos os traços"
             >
               <Trash2 className="w-3.5 h-3.5" />
             </button>
@@ -678,7 +772,7 @@ export const DigitalPenCanvas: React.FC<DigitalPenCanvasProps> = ({
               type="button"
               onClick={() => setIsExpanded(!isExpanded)}
               className="p-1.5 bg-surface neo-border-sm hover:bg-gray-100 dark:hover:bg-gray-700 ml-1"
-              title={isExpanded ? 'Restaurar' : 'Maximizar'}
+              title={isExpanded ? 'Restaurar tamanho' : 'Maximizar tela cheia'}
             >
               {isExpanded ? <Minimize2 className="w-3.5 h-3.5 text-ink" /> : <Maximize2 className="w-3.5 h-3.5 text-ink" />}
             </button>
@@ -688,7 +782,7 @@ export const DigitalPenCanvas: React.FC<DigitalPenCanvasProps> = ({
                 type="button"
                 onClick={onClose}
                 className="p-1.5 bg-[#FF3366] text-white neo-border-sm hover:bg-red-700 ml-1"
-                title="Fechar"
+                title="Fechar rascunho"
               >
                 <X className="w-3.5 h-3.5" />
               </button>
@@ -697,45 +791,71 @@ export const DigitalPenCanvas: React.FC<DigitalPenCanvasProps> = ({
         </div>
       </div>
 
-      {/* Indicador de Status da Caneta / Mesa Digitalizadora */}
+      {/* Indicador em Tempo Real da Mesa Digitalizadora e Medidor de Pressão */}
       <div className="flex items-center justify-between px-3 py-1 bg-surface border-b-2 border-black dark:border-gray-700 text-[11px] font-mono text-gray-600 dark:text-ink-muted">
-        <div className="flex items-center gap-2">
-          <span className="flex items-center gap-1">
+        <div className="flex items-center gap-3">
+          <span className="flex items-center gap-1.5">
             <span
               className={`w-2 h-2 rounded-full ${
                 isPenDetected ? 'bg-green-500 animate-pulse' : 'bg-blue-400'
               }`}
             />
-            {isPenDetected ? 'Caneta detectada' : 'Mouse ou caneta'}
-          </span>
-          {isPenDetected && (
-            <span className="bg-yellow-100 dark:bg-yellow-950 px-1 border border-black dark:border-yellow-700 text-ink dark:text-yellow-300">
-              Pressão: {Math.round(stylusPressure * 100)}%
+            <span className="font-bold text-ink">
+              {isPenDetected ? 'Mesa / Stylus ativa' : 'Aguardando toque da caneta'}
             </span>
-          )}
+          </span>
+
+          {/* Medidor visual dinâmico de pressão */}
+          <div className="flex items-center gap-1.5 bg-surface-2 px-2 py-0.5 neo-border-sm">
+            <span className="text-[10px] uppercase font-bold text-ink">Pressão:</span>
+            <div className="w-16 h-2 bg-gray-200 dark:bg-gray-700 rounded-none overflow-hidden border border-black dark:border-gray-600">
+              <div
+                className="h-full bg-gradient-to-r from-emerald-400 via-yellow-400 to-rose-500 transition-all duration-75"
+                style={{ width: `${Math.round(stylusPressure * 100)}%` }}
+              />
+            </div>
+            <span className="text-[10px] font-bold text-ink w-7 text-right">
+              {Math.round(stylusPressure * 100)}%
+            </span>
+          </div>
+
+          {/* Botão de sensibilidade rápida */}
+          <button
+            type="button"
+            onClick={() => setIsPressureEnabled((v) => !v)}
+            className={`text-[10px] px-1.5 py-0.5 neo-border-sm font-bold ${
+              isPressureEnabled ? 'bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300' : 'bg-gray-200 text-gray-600'
+            }`}
+            title="Ativar/desativar resposta dinâmica de pressão"
+          >
+            {isPressureEnabled ? 'Dinâmica ON' : 'Dinâmica OFF'}
+          </button>
         </div>
+
         <div className="flex items-center gap-3">
-          <span className="text-ink font-bold">{strokes.length} traços salvos</span>
+          <span className="text-ink font-bold">{strokes.length} traço(s)</span>
           <span>Questão: {questionId}</span>
         </div>
       </div>
 
       {/* Área do Canvas de Desenho */}
-      <div className={`relative flex-1 min-h-[320px] overflow-hidden ${patternClass}`}>
+      <div className={`relative flex-1 min-h-[340px] overflow-hidden ${patternClass}`}>
         <canvas
           ref={canvasRef}
           onPointerDown={handlePointerDown}
           onPointerMove={handlePointerMove}
           onPointerUp={handlePointerUp}
           onPointerCancel={handlePointerUp}
-          className="stylus-canvas absolute inset-0 w-full h-full"
+          className={`stylus-canvas absolute inset-0 w-full h-full ${
+            activeTool === 'eraser' ? 'cursor-cell' : 'cursor-crosshair'
+          }`}
         />
 
         {strokes.length === 0 && mode === 'scratchpad' && (
           <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none opacity-40 select-none">
             <Sparkles className="w-8 h-8 mb-2 text-gray-500 dark:text-gray-300" />
-            <p className="text-sm font-bold text-gray-700 dark:text-ink-muted">Espaço para cálculos e anotações</p>
-            <p className="text-xs text-gray-500 dark:text-gray-400">Desenhe com a caneta ou o mouse</p>
+            <p className="text-sm font-bold text-gray-700 dark:text-ink-muted">Espaço para cálculos e rascunhos</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400">Sensibilidade à pressão ativada para canetas e mesas digitalizadoras</p>
           </div>
         )}
       </div>

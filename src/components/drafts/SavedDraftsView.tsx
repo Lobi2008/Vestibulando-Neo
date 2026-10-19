@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import type { Question, ExamType, AreaOfKnowledge, DrawingStroke } from '../../types/index.ts';
 import { richTextToPlain } from '../../utils/richText.ts';
+import { renderStroke, DEFAULT_PRESSURE_CONFIG } from '../../utils/canvasRenderer.ts';
 
 interface SavedDraftsViewProps {
   questions: Question[];
@@ -116,49 +117,7 @@ const DraftThumbnail: React.FC<{
     ctx.scale(scale, scale);
 
     for (const stroke of strokes) {
-      if (stroke.points.length === 0) continue;
-
-      let drawColor = stroke.color;
-      if (isDarkMode && (drawColor === '#111111' || drawColor === '#000000')) {
-        drawColor = '#FFFFFF';
-      } else if (!isDarkMode && drawColor === '#FFFFFF') {
-        drawColor = '#111111';
-      }
-
-      ctx.save();
-      ctx.lineCap = 'round';
-      ctx.lineJoin = 'round';
-
-      if (stroke.tool === 'highlighter') {
-        ctx.globalAlpha = isDarkMode ? 0.6 : 0.45;
-        ctx.strokeStyle = drawColor;
-        ctx.lineWidth = stroke.width * 4;
-        ctx.globalCompositeOperation = isDarkMode ? 'screen' : 'multiply';
-      } else if (stroke.tool === 'eraser') {
-        ctx.globalCompositeOperation = 'destination-out';
-        ctx.lineWidth = stroke.width * 5;
-      } else {
-        ctx.globalAlpha = 1.0;
-        ctx.strokeStyle = drawColor;
-        ctx.lineWidth = stroke.width;
-        ctx.globalCompositeOperation = 'source-over';
-      }
-
-      const pts = stroke.points;
-      if (pts.length === 1) {
-        ctx.beginPath();
-        ctx.arc(pts[0].x, pts[0].y, stroke.width / 2, 0, Math.PI * 2);
-        ctx.fillStyle = drawColor;
-        ctx.fill();
-      } else {
-        ctx.beginPath();
-        ctx.moveTo(pts[0].x, pts[0].y);
-        for (let i = 1; i < pts.length; i++) {
-          ctx.lineTo(pts[i].x, pts[i].y);
-        }
-        ctx.stroke();
-      }
-      ctx.restore();
+      renderStroke(ctx, stroke, !!isDarkMode, DEFAULT_PRESSURE_CONFIG);
     }
 
     ctx.restore();
@@ -261,26 +220,12 @@ export const SavedDraftsView: React.FC<SavedDraftsViewProps> = ({
     ctx.font = 'bold 24px sans-serif';
     ctx.fillText(`Rascunho • ${question.vestibular} ${question.year} • ${question.discipline}`, 40, 50);
 
+    ctx.save();
+    ctx.translate(0, 60);
     for (const stroke of strokes) {
-      if (stroke.points.length === 0) continue;
-      ctx.save();
-      ctx.lineCap = 'round';
-      ctx.lineJoin = 'round';
-      let col = stroke.color;
-      if (isDarkMode && (col === '#111111' || col === '#000000')) col = '#FFFFFF';
-      else if (!isDarkMode && col === '#FFFFFF') col = '#111111';
-
-      ctx.strokeStyle = col;
-      ctx.lineWidth = stroke.width * 2;
-      const pts = stroke.points;
-      ctx.beginPath();
-      ctx.moveTo(pts[0].x, pts[0].y + 60);
-      for (let i = 1; i < pts.length; i++) {
-        ctx.lineTo(pts[i].x, pts[i].y + 60);
-      }
-      ctx.stroke();
-      ctx.restore();
+      renderStroke(ctx, stroke, !!isDarkMode, DEFAULT_PRESSURE_CONFIG);
     }
+    ctx.restore();
 
     const dataUrl = canvas.toDataURL('image/png');
     const link = document.createElement('a');

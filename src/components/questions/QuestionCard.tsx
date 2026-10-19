@@ -30,6 +30,8 @@ import type { Question, UserAttempt, DrawingStroke, SrsRating, SrsItemData } fro
 import { DigitalPenCanvas } from '../canvas/DigitalPenCanvas.tsx';
 import { RichText } from '../common/RichText.tsx';
 import { useTextHighlighter } from '../../hooks/useTextHighlighter.ts';
+import { QuestionEditorModal } from './QuestionEditorModal.tsx';
+import type { QuestionPatch } from '../../services/storage/localDatabase.ts';
 
 /** Tempo (ms) segurando uma alternativa para riscá-la */
 const HOLD_TO_STRIKE_MS = 1000;
@@ -50,6 +52,12 @@ interface QuestionCardProps {
   onSaveStrokes: (questionId: string, strokes: DrawingStroke[]) => void;
   /** Grava a resolução (nova ou editada) no banco. Retorna false se não foi possível salvar. */
   onUpdateExplanation?: (questionId: string, explanation: string) => boolean;
+  /** Grava alterações de enunciado, alternativas, gabarito etc. Retorna false se não foi possível salvar. */
+  onUpdateQuestion?: (questionId: string, patch: QuestionPatch) => boolean;
+  /** Volta a questão ao original (desfaz as edições). */
+  onRestoreQuestion?: (questionId: string) => boolean;
+  /** true se a questão já foi editada pelo aluno */
+  isQuestionEdited?: boolean;
   onNextQuestion: () => void;
   onPrevQuestion: () => void;
   currentIndex: number;
@@ -67,6 +75,9 @@ const QuestionCardComponent: React.FC<QuestionCardProps> = ({
   onRateSrs,
   onSaveStrokes,
   onUpdateExplanation,
+  onUpdateQuestion,
+  onRestoreQuestion,
+  isQuestionEdited = false,
   onNextQuestion,
   onPrevQuestion,
   currentIndex,
@@ -107,8 +118,10 @@ const QuestionCardComponent: React.FC<QuestionCardProps> = ({
   const [isEditingExplanation, setIsEditingExplanation] = useState<boolean>(false);
   const [explanationDraft, setExplanationDraft] = useState<string>('');
   const [explanationSaveFailed, setExplanationSaveFailed] = useState<boolean>(false);
+  const [isQuestionEditorOpen, setIsQuestionEditorOpen] = useState<boolean>(false);
 
   useEffect(() => {
+    setIsQuestionEditorOpen(false);
     setIsEditingExplanation(false);
     setExplanationSaveFailed(false);
     setCopiedKind(null);
@@ -193,12 +206,23 @@ const QuestionCardComponent: React.FC<QuestionCardProps> = ({
     }
   };
 
+  const handleSaveQuestionEdit = (patch: QuestionPatch): boolean => {
+    if (!onUpdateQuestion) return false;
+    const ok = onUpdateQuestion(question.id, patch);
+    // O texto mudou: as marcações antigas do marca-texto ficariam fora do lugar
+    if (ok && patch.statement !== undefined) highlighter.clear();
+    return ok;
+  };
+
   // Atalhos de teclado (A-E/1-5, R para rascunho, S para pular, Enter para confirmar)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (['INPUT', 'TEXTAREA'].includes((e.target as HTMLElement)?.tagName)) {
         return;
       }
+
+      // Com a janela de edição aberta, as teclas não devem responder, pular nem abrir rascunho
+      if (isQuestionEditorOpen) return;
 
       // Atalho 'W' para voltar à questão anterior
       if (e.key.toLowerCase() === 'w' && !e.ctrlKey && !e.metaKey && !e.altKey) {
@@ -240,7 +264,7 @@ const QuestionCardComponent: React.FC<QuestionCardProps> = ({
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [selectedOption, hasSubmitted, question, onNextQuestion, onPrevQuestion]);
+  }, [selectedOption, hasSubmitted, question, onNextQuestion, onPrevQuestion, isQuestionEditorOpen]);
 
   const handleSubmitAnswer = () => {
     if (!selectedOption || hasSubmitted) return;
@@ -522,6 +546,23 @@ const QuestionCardComponent: React.FC<QuestionCardProps> = ({
                     : 'Copiar questão'}
                 </span>
               </button>
+
+              {/* Botão discreto: editar enunciado, alternativas e gabarito */}
+              {onUpdateQuestion && (
+                <button
+                  type="button"
+                  onClick={() => setIsQuestionEditorOpen(true)}
+                  className={`p-1.5 transition-colors ${
+                    isQuestionEdited
+                      ? 'text-amber-600 dark:text-amber-400 hover:text-ink dark:hover:text-white'
+                      : 'text-gray-400 dark:text-gray-500 hover:text-ink dark:hover:text-white'
+                  }`}
+                  title={isQuestionEdited ? 'Editar enunciado e gabarito (já editada)' : 'Editar enunciado e gabarito'}
+                  aria-label="Editar enunciado e gabarito"
+                >
+                  <Pencil className="w-3.5 h-3.5" />
+                </button>
+              )}
 
               {/* Cronômetro com texto de cor clara no Modo Escuro */}
               <div className="flex items-center gap-1.5 text-xs font-mono font-black bg-page px-2.5 py-1 neo-border-sm text-[#111111] dark:text-[#FFFFFF] border-black shadow-sm">
@@ -928,6 +969,16 @@ const QuestionCardComponent: React.FC<QuestionCardProps> = ({
             onClose={() => setShowBottom(false)}
           />
         </div>
+      )}
+
+      {isQuestionEditorOpen && onUpdateQuestion && (
+        <QuestionEditorModal
+          question={question}
+          isEdited={isQuestionEdited}
+          onSave={handleSaveQuestionEdit}
+          onRestore={onRestoreQuestion ? () => onRestoreQuestion(question.id) : undefined}
+          onClose={() => setIsQuestionEditorOpen(false)}
+        />
       )}
     </div>
   );

@@ -8,7 +8,7 @@
  * 4. Seção dedicada de Rascunhos Salvos com filtros padrões e pré-visualização de traços
  * 5. Repetição Espaçada (SRS SM-2)
  * 6. Dashboard de Desempenho com TRI 3PL e análise de proficiência
- * 7. Ingestão de Dados (enem.dev) e Exportação SQLite
+ * 7. Banco de dados: importar/exportar (enem.dev, SQLite) e editar/apagar dados e questões
  * 8. Perfil & Metas com edição inline
  * 9. Alternador completo de Modo Claro e Modo Escuro
  */
@@ -22,7 +22,7 @@ import { QuestionCard } from './components/questions/QuestionCard.tsx';
 import { SavedDraftsView } from './components/drafts/SavedDraftsView.tsx';
 import { SpacedRepetitionDeck } from './components/srs/SpacedRepetitionDeck.tsx';
 import { PerformanceDashboard } from './components/dashboard/PerformanceDashboard.tsx';
-import { DataSyncHub } from './components/sync/DataSyncHub.tsx';
+import { DatabaseHub } from './components/sync/DatabaseHub.tsx';
 import { UserProfileTab } from './components/profile/UserProfileTab.tsx';
 import { ShortcutsFooter } from './components/common/ShortcutsFooter.tsx';
 
@@ -39,8 +39,12 @@ import {
   getQuestionStrokes,
   saveQuestionStrokes,
   getAllSavedStrokes,
-  updateQuestionExplanation
+  getEditedQuestionIds,
+  updateQuestionFields,
+  restoreQuestionOriginal,
+  deleteQuestionsByIds
 } from './services/storage/localDatabase.ts';
+import type { QuestionPatch } from './services/storage/localDatabase.ts';
 import { calculateNextSrsSchedule, isSrsItemDue, formatDateYmd } from './services/srs/srsEngine.ts';
 import { RotateCcw, AlertCircle, ArrowLeft } from 'lucide-react';
 
@@ -96,17 +100,18 @@ export default function App() {
   const [sessionLimit, setSessionLimit] = useState<number | null>(null);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState<number>(0);
 
-  // Questões filtradas pela taxonomia
+  // Questões filtradas pela taxonomia (e sorteadas/randomizadas)
   const filteredQuestions = useMemo(() => {
     if (activeSessionIds && activeSessionIds.length > 0) {
       const idMap = new Map(questions.map((q) => [q.id, q]));
       return activeSessionIds.map((id) => idMap.get(id)).filter(Boolean) as Question[];
     }
     const list = filterQuestions(questions, filters, attempts);
+    const shuffled = [...list].sort(() => Math.random() - 0.5);
     if (sessionLimit && sessionLimit > 0) {
-      return list.slice(0, sessionLimit);
+      return shuffled.slice(0, sessionLimit);
     }
-    return list;
+    return shuffled;
   }, [questions, filters, attempts, sessionLimit, activeSessionIds]);
 
   useEffect(() => {
@@ -139,12 +144,13 @@ export default function App() {
     return Object.keys(savedStrokesMap).length;
   }, [savedStrokesMap]);
 
-  // Inicia sessão configurada (simulado)
+  // Inicia sessão configurada (simulado) com questões sorteadas (randomizadas)
   const handleStartSession = (configuredFilters: FilterState, limit: number) => {
     setFilters(configuredFilters);
     setSessionLimit(limit);
     const initialList = filterQuestions(questions, configuredFilters, attempts);
-    const chosen = limit > 0 ? initialList.slice(0, limit) : initialList;
+    const shuffled = [...initialList].sort(() => Math.random() - 0.5);
+    const chosen = limit > 0 ? shuffled.slice(0, limit) : shuffled;
     setActiveSessionIds(chosen.map((q) => q.id));
     setCurrentQuestionIndex(0);
     setActiveTab('questions');
@@ -203,13 +209,48 @@ export default function App() {
     });
   }, []);
 
-  // Adiciona/edita a resolução de uma questão e grava de forma permanente no banco local
-  const handleUpdateExplanation = useCallback((questionId: string, explanation: string): boolean => {
-    const updated = updateQuestionExplanation(questionId, explanation);
-    if (!updated) return false;
-    setQuestions(updated);
+  // Edita enunciado, alternativas, gabarito, resolução etc. e grava de forma permanente no banco local
+  const handleUpdateQuestion = useCallback((questionId: string, patch: QuestionPatch): boolean => {
+    const result = updateQuestionFields(questionId, patch);
+    if (!result) return false;
+    setQuestions(result.questions);
+    // Gabarito mudou: tentativas antigas dessa questão foram conferidas de novo
+    if (result.attemptsChanged) setAttempts(getStoredAttempts());
     return true;
   }, []);
+
+  // Adiciona/edita a resolução de uma questão
+  const handleUpdateExplanation = useCallback(
+    (questionId: string, explanation: string): boolean => handleUpdateQuestion(questionId, { explanation }),
+    [handleUpdateQuestion]
+  );
+
+  // Desfaz as edições de uma questão (volta ao original)
+  const handleRestoreQuestion = useCallback((questionId: string): boolean => {
+    const result = restoreQuestionOriginal(questionId);
+    if (!result) return false;
+    setQuestions(result.questions);
+    if (result.attemptsChanged) setAttempts(getStoredAttempts());
+    return true;
+  }, []);
+
+  // Apaga questões do banco. Retorna quantas foram removidas.
+  const handleDeleteQuestions = useCallback((ids: string[]): number => {
+    const { remaining, removedCount } = deleteQuestionsByIds(ids);
+    setQuestions(remaining);
+    return removedCount;
+  }, []);
+
+  // Relê perfil, histórico, revisões e rascunhos depois de apagar dados na área Banco de dados
+  const handleDataChanged = useCallback(() => {
+    setProfile(getStoredProfile());
+    setAttempts(getStoredAttempts());
+    setSrsItems(getStoredSrsItems());
+    setSavedStrokesMap(getAllSavedStrokes());
+  }, []);
+
+  // Questões que o aluno já editou (para marcar na lista e no botão de edição)
+  const editedQuestionIds = useMemo(() => new Set(getEditedQuestionIds()), [questions]);
 
   // Excluir rascunho de uma questão
   const handleDeleteDraft = useCallback((questionId: string) => {
@@ -371,6 +412,9 @@ export default function App() {
                 onRateSrs={handleRateSrs}
                 onSaveStrokes={handleSaveStrokes}
                 onUpdateExplanation={handleUpdateExplanation}
+                onUpdateQuestion={handleUpdateQuestion}
+                onRestoreQuestion={handleRestoreQuestion}
+                isQuestionEdited={editedQuestionIds.has(currentQuestion.id)}
                 onNextQuestion={handleNextQuestion}
                 onPrevQuestion={handlePrevQuestion}
                 currentIndex={currentQuestionIndex}
@@ -432,17 +476,19 @@ export default function App() {
           />
         )}
 
-        {/* 7. ABA INGESTÃO & BANCO OFFLINE */}
+        {/* 7. ABA BANCO DE DADOS: importar/exportar e editar/apagar */}
         {activeTab === 'sync' && (
-          <DataSyncHub
+          <DatabaseHub
             questions={questions}
+            attempts={attempts}
+            profile={profile}
+            srsItems={srsItems}
+            editedQuestionIds={editedQuestionIds}
             onQuestionsUpdated={(updated) => setQuestions(updated)}
-            onProgressCleared={(blankProfile) => {
-              setProfile(blankProfile);
-              setAttempts([]);
-              setSrsItems({});
-              setSavedStrokesMap({});
-            }}
+            onDataChanged={handleDataChanged}
+            onSaveQuestion={handleUpdateQuestion}
+            onRestoreQuestion={handleRestoreQuestion}
+            onDeleteQuestions={handleDeleteQuestions}
           />
         )}
 

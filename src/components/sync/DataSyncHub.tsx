@@ -1,11 +1,12 @@
 /**
  * @file src/components/sync/DataSyncHub.tsx
- * @description Central de sincronização e ingestão de dados para vestibulares.
+ * @description Importar e exportar bancos de questões.
  * Permite buscar dados da API enem.dev e do repositório beatrizmilz/BancoDeQuestoes,
- * exibe logs de conectividade e exporta os dados para arquivo SQLite offline no Windows 11.
+ * enviar arquivos próprios (.json/.csv), exibe logs de conectividade e exporta os dados para
+ * arquivo SQLite offline no Windows 11. Apagar e editar dados fica em DataManagerPanel.
  */
 
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { 
   Database, 
   RefreshCw, 
@@ -15,22 +16,11 @@ import {
   AlertCircle, 
   Terminal, 
   ExternalLink,
-  Layers,
-  Sparkles,
-  Trash2,
-  AlertTriangle
+  Sparkles
 } from 'lucide-react';
-import type { Question, UserProfile, ExamType, DisciplineType } from '../../types/index.ts';
+import type { Question } from '../../types/index.ts';
 import { fetchFromEnemDev, fetchFromBeatrizMilzRepo, IngestionLog } from '../../services/ingestion/apiIngestion.ts';
-import {
-  saveQuestions,
-  generateSqliteExportScript,
-  clearUserProgress,
-  deleteQuestionsByFilter,
-  matchesDeletionCriteria,
-} from '../../services/storage/localDatabase.ts';
-import type { QuestionDeletionCriteria } from '../../services/storage/localDatabase.ts';
-import { INITIAL_QUESTION_SEED } from '../../services/ingestion/questionSeed.ts';
+import { saveQuestions, generateSqliteExportScript } from '../../services/storage/localDatabase.ts';
 import {
   IMPORT_FIELD_GUIDE,
   buildCsvTemplate,
@@ -42,13 +32,11 @@ import type { ImportError } from '../../utils/questionImport.ts';
 interface DataSyncHubProps {
   questions: Question[];
   onQuestionsUpdated: (updatedList: Question[]) => void;
-  onProgressCleared: (blankProfile: UserProfile) => void;
 }
 
 export const DataSyncHub: React.FC<DataSyncHubProps> = ({
   questions,
   onQuestionsUpdated,
-  onProgressCleared,
 }) => {
   const [isLoadingEnem, setIsLoadingEnem] = useState<boolean>(false);
   const [isLoadingBeatriz, setIsLoadingBeatriz] = useState<boolean>(false);
@@ -74,93 +62,6 @@ export const DataSyncHub: React.FC<DataSyncHubProps> = ({
     errors: ImportError[];
     fatalError?: string;
   } | null>(null);
-
-  // Apagar questões: filtros (vestibular > matéria > conteúdo específico) e confirmação
-  const [deleteVestibular, setDeleteVestibular] = useState<ExamType | 'TODOS'>('TODOS');
-  const [deleteDiscipline, setDeleteDiscipline] = useState<DisciplineType | 'TODAS'>('TODAS');
-  const [deleteTopic, setDeleteTopic] = useState<string>('TODOS');
-  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState<boolean>(false);
-  const [deleteConfirmText, setDeleteConfirmText] = useState<string>('');
-
-  const deleteCriteria: QuestionDeletionCriteria = {
-    vestibular: deleteVestibular,
-    discipline: deleteDiscipline,
-    topic: deleteTopic,
-  };
-
-  const countBy = (list: string[]) => {
-    const map = new Map<string, number>();
-    list.forEach((item) => map.set(item, (map.get(item) || 0) + 1));
-    return Array.from(map.entries()).sort((a, b) => a[0].localeCompare(b[0], 'pt-BR'));
-  };
-
-  // Opções de cada filtro dependem do nível anterior (só aparece o que existe no banco)
-  const vestibularOptions = useMemo(() => countBy(questions.map((q) => q.vestibular)), [questions]);
-  const disciplineOptions = useMemo(
-    () =>
-      countBy(
-        questions
-          .filter((q) => matchesDeletionCriteria(q, { vestibular: deleteVestibular, discipline: 'TODAS', topic: 'TODOS' }))
-          .map((q) => q.discipline)
-      ),
-    [questions, deleteVestibular]
-  );
-  const topicOptions = useMemo(
-    () =>
-      countBy(
-        questions
-          .filter((q) =>
-            matchesDeletionCriteria(q, { vestibular: deleteVestibular, discipline: deleteDiscipline, topic: 'TODOS' })
-          )
-          .map((q) => q.topic)
-      ),
-    [questions, deleteVestibular, deleteDiscipline]
-  );
-
-  const deleteMatchCount = useMemo(
-    () => questions.filter((q) => matchesDeletionCriteria(q, { vestibular: deleteVestibular, discipline: deleteDiscipline, topic: deleteTopic })).length,
-    [questions, deleteVestibular, deleteDiscipline, deleteTopic]
-  );
-
-  const isDeletingEverything =
-    deleteVestibular === 'TODOS' && deleteDiscipline === 'TODAS' && deleteTopic === 'TODOS';
-
-  const closeDeleteModal = () => {
-    setIsDeleteModalOpen(false);
-    setDeleteConfirmText('');
-  };
-
-  useEffect(() => {
-    if (!isDeleteModalOpen) return;
-    const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') closeDeleteModal();
-    };
-    window.addEventListener('keydown', onKeyDown);
-    return () => window.removeEventListener('keydown', onKeyDown);
-  }, [isDeleteModalOpen]);
-
-  const handleConfirmDelete = () => {
-    if (deleteMatchCount === 0) return;
-    if (isDeletingEverything && deleteConfirmText.trim().toUpperCase() !== 'APAGAR') return;
-
-    const { remaining, removedCount } = deleteQuestionsByFilter(deleteCriteria);
-    onQuestionsUpdated(remaining);
-    setLogs((prev) => [
-      {
-        timestamp: Date.now(),
-        source: 'Exclusão',
-        status: removedCount > 0 ? 'success' : 'warning',
-        message: `${removedCount} questão(ões) apagada(s). Restam ${remaining.length} no banco.`,
-        count: removedCount,
-      },
-      ...prev,
-    ]);
-
-    setDeleteVestibular('TODOS');
-    setDeleteDiscipline('TODAS');
-    setDeleteTopic('TODOS');
-    closeDeleteModal();
-  };
 
   const handleSyncEnemDev = async () => {
     setIsLoadingEnem(true);
@@ -335,27 +236,6 @@ export const DataSyncHub: React.FC<DataSyncHubProps> = ({
     }
   };
 
-  const handleClearProgress = () => {
-    if (
-      confirm(
-        'Apagar TODO o seu progresso?\n\nPerfil (nível, XP, ofensivas, meta), histórico de tentativas, revisões agendadas e rascunhos da mesa digitalizadora serão removidos. As questões continuam no banco.\n\nEsta ação não pode ser desfeita.'
-      )
-    ) {
-      const blank = clearUserProgress();
-      onProgressCleared(blank);
-      setLogs((prev) => [
-        {
-          timestamp: Date.now(),
-          source: 'Progresso',
-          status: 'success',
-          message: 'Progresso apagado: perfil, tentativas, revisões e rascunhos.',
-          count: 0,
-        },
-        ...prev,
-      ]);
-    }
-  };
-
   return (
     <div className="space-y-6">
       {/* Cabeçalho */}
@@ -469,7 +349,7 @@ export const DataSyncHub: React.FC<DataSyncHubProps> = ({
       {/* Operações de Persistência Local (SQLite / Backup) */}
       <div className="bg-surface neo-border neo-shadow p-5">
         <h3 className="text-base font-black uppercase tracking-wider text-ink pb-2 mb-4 border-b-2 border-black flex items-center justify-between">
-          <span>Backup e restauração</span>
+          <span>Exportar</span>
           <span className="text-xs text-green-700 font-bold">Funciona sem internet</span>
         </h3>
 
@@ -481,15 +361,6 @@ export const DataSyncHub: React.FC<DataSyncHubProps> = ({
           >
             <Download className="w-4 h-4" />
             <span>Exportar backup (.sql)</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={handleClearProgress}
-            className="px-4 py-2 text-xs font-black neo-btn bg-red-500 text-white flex items-center gap-2"
-          >
-            <Trash2 className="w-4 h-4" />
-            <span>Apagar meu progresso</span>
           </button>
         </div>
       </div>
@@ -603,152 +474,6 @@ export const DataSyncHub: React.FC<DataSyncHubProps> = ({
           </div>
         </details>
       </div>
-
-      {/* Apagar questões do banco (com filtros e confirmação) */}
-      <div className="bg-[#FFF0F3] dark:bg-surface-2 neo-border neo-shadow p-5">
-        <h3 className="text-base font-black uppercase tracking-wider text-ink pb-2 mb-4 border-b-2 border-black flex items-center gap-2">
-          <Trash2 className="w-4 h-4 text-[#FF3366]" />
-          <span>Apagar questões</span>
-        </h3>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
-          <label className="text-xs font-black text-ink space-y-1 block">
-            <span>Vestibular</span>
-            <select
-              value={deleteVestibular}
-              onChange={(e) => {
-                setDeleteVestibular(e.target.value as ExamType | 'TODOS');
-                setDeleteDiscipline('TODAS');
-                setDeleteTopic('TODOS');
-              }}
-              className="w-full bg-surface neo-border-sm px-2 py-2 text-xs font-bold text-ink"
-            >
-              <option value="TODOS">Todos</option>
-              {vestibularOptions.map(([name, count]) => (
-                <option key={name} value={name}>
-                  {name} ({count})
-                </option>
-              ))}
-            </select>
-          </label>
-
-          <label className="text-xs font-black text-ink space-y-1 block">
-            <span>Matéria</span>
-            <select
-              value={deleteDiscipline}
-              onChange={(e) => {
-                setDeleteDiscipline(e.target.value as DisciplineType | 'TODAS');
-                setDeleteTopic('TODOS');
-              }}
-              className="w-full bg-surface neo-border-sm px-2 py-2 text-xs font-bold text-ink"
-            >
-              <option value="TODAS">Todas</option>
-              {disciplineOptions.map(([name, count]) => (
-                <option key={name} value={name}>
-                  {name} ({count})
-                </option>
-              ))}
-            </select>
-          </label>
-
-          <label className="text-xs font-black text-ink space-y-1 block">
-            <span>Conteúdo</span>
-            <select
-              value={deleteTopic}
-              onChange={(e) => setDeleteTopic(e.target.value)}
-              className="w-full bg-surface neo-border-sm px-2 py-2 text-xs font-bold text-ink"
-            >
-              <option value="TODOS">Todos</option>
-              {topicOptions.map(([name, count]) => (
-                <option key={name} value={name}>
-                  {name} ({count})
-                </option>
-              ))}
-            </select>
-          </label>
-        </div>
-
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <span className="text-sm font-bold text-gray-800 dark:text-ink">
-            {deleteMatchCount} questão(ões) nos filtros escolhidos.
-          </span>
-          <button
-            type="button"
-            disabled={deleteMatchCount === 0}
-            onClick={() => setIsDeleteModalOpen(true)}
-            className="px-4 py-2 text-xs font-black neo-btn bg-[#FF3366] text-white disabled:opacity-40 flex items-center gap-2"
-          >
-            <Trash2 className="w-4 h-4" />
-            <span>Apagar</span>
-          </button>
-        </div>
-      </div>
-
-      {/* Confirmação de exclusão */}
-      {isDeleteModalOpen && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="delete-questions-title"
-          onClick={closeDeleteModal}
-        >
-          <div
-            className="w-full max-w-md bg-surface neo-border-thick neo-shadow-xl p-5 space-y-4"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <h4 id="delete-questions-title" className="text-base font-black text-ink flex items-center gap-2">
-              <AlertTriangle className="w-5 h-5 text-[#FF3366]" />
-              Confirmar exclusão
-            </h4>
-
-            <p className="text-sm font-bold text-gray-900 dark:text-ink">
-              Você vai apagar <span className="text-[#FF3366]">{deleteMatchCount}</span> questão(ões). Isso não pode ser desfeito.
-            </p>
-
-            <ul className="text-xs font-mono bg-surface-2 neo-border-sm p-3 space-y-1 text-ink">
-              <li>Vestibular: <strong>{deleteVestibular === 'TODOS' ? 'Todos' : deleteVestibular}</strong></li>
-              <li>Matéria: <strong>{deleteDiscipline === 'TODAS' ? 'Todas' : deleteDiscipline}</strong></li>
-              <li>Conteúdo: <strong>{deleteTopic === 'TODOS' ? 'Todos' : deleteTopic}</strong></li>
-            </ul>
-
-            {isDeletingEverything && (
-              <label className="block text-xs font-black text-ink space-y-1">
-                <span>
-                  Sem filtros, isso apaga TODAS as questões. Digite <strong>APAGAR</strong> para confirmar.
-                </span>
-                <input
-                  type="text"
-                  value={deleteConfirmText}
-                  onChange={(e) => setDeleteConfirmText(e.target.value)}
-                  autoFocus
-                  className="w-full bg-surface neo-border-sm px-2 py-2 text-sm font-mono text-ink"
-                  placeholder="APAGAR"
-                />
-              </label>
-            )}
-
-            <div className="flex items-center justify-end gap-3 pt-1">
-              <button
-                type="button"
-                onClick={closeDeleteModal}
-                className="px-4 py-2 text-xs font-black neo-btn bg-surface text-ink"
-              >
-                Cancelar
-              </button>
-              <button
-                type="button"
-                onClick={handleConfirmDelete}
-                disabled={isDeletingEverything && deleteConfirmText.trim().toUpperCase() !== 'APAGAR'}
-                className="px-4 py-2 text-xs font-black neo-btn bg-[#FF3366] text-white disabled:opacity-40 flex items-center gap-2"
-              >
-                <Trash2 className="w-4 h-4" />
-                <span>Apagar definitivamente</span>
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Console de Logs de Ingestão */}
       <div className="bg-[#111111] text-gray-200 neo-border neo-shadow p-4 font-mono text-xs">
